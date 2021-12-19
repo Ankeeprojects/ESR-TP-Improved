@@ -1,12 +1,13 @@
 from tkinter import *
 import tkinter.messagebox as messagebox
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFile
 import socket, threading, sys, traceback, os, time
 
 from RtpPacket import RtpPacket
 
 CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class Client:
 	INIT = 0
@@ -123,20 +124,19 @@ class Client:
 			if self.state == self.PLAYING: 
 				try:
 					data = self.rtpSocket.recv(20480)
-					if data:
-						rtpPacket = RtpPacket()
-						rtpPacket.decode(data)
-						
-						currFrameNbr = rtpPacket.seqNum()
-						if currFrameNbr % 30 == 0:
-							print("Current Seq Num: " + str(currFrameNbr))
-											
-						if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
-							self.frameNbr = currFrameNbr
-							#print("Payload length: " + str(len(rtpPacket.getPayload())))
-							self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-						elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
-							break
+					rtpPacket = RtpPacket()
+					rtpPacket.decode(data)
+					
+					currFrameNbr = rtpPacket.seqNum()
+					if currFrameNbr % 30 == 0:
+						print("Current Seq Num: " + str(currFrameNbr))
+										
+					if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
+						self.frameNbr = currFrameNbr
+						#print("Payload length: " + str(len(rtpPacket.getPayload())))
+						self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
+					elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
+						break
 					
 				except:
 					

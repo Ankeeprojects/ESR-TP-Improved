@@ -15,10 +15,11 @@ class VideoStream:
 		if not success: 
 			self.file.release()
 			self.file = cv2.VideoCapture(self.filename)
+			success, data = self.file.read()
 			self.frameNum = 0
 
 		self.frameNum += 1
-		data = cv2.imencode('.jpg', data)[1].tobytes()
+		data = cv2.imencode('.jpg', data, [cv2.IMWRITE_JPEG_QUALITY, 80])[1].tobytes()
 		return data
 		
 	def frameNbr(self):
