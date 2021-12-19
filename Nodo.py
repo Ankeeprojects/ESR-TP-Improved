@@ -220,7 +220,7 @@ class Nodo:
         self.rtspSocket = socket(AF_INET, SOCK_STREAM)
         self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.rtspSocket.bind(('', self.streaming_port))
-        self.rtspSocket.listen(5)        
+        self.rtspSocket.listen(5)  
 		# Receive client info (address,port) through RTSP/TCP session
         
         print(f"Streaming server a correr na porta {self.streaming_port}")

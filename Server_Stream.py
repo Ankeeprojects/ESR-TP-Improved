@@ -15,10 +15,10 @@ class Server_Stream:
         self.ligacoes = ligacoes
         self.stream = VideoStream(filename)
 
-    def run(self):
-        threading.Thread(target=self.sendRtp).start()
+    def run(self, port):
+        threading.Thread(target=self.sendRtp, args=(port,)).start()
 
-    def sendRtp(self):
+    def sendRtp(self, port : int):
         """Send RTP packets over UDP."""
         while True:
             #self.clientInfo['event'].wait(0.05) 

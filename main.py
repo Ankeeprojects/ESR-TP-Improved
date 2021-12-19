@@ -8,9 +8,16 @@ from Client import Client
 def main():
     num_args = len(sys.argv)
     print(num_args)
-    if num_args == 2:
+    if num_args == 3:
         s = Servidor()
-        s.init_server(sys.argv[1])
+        ficheiros = dict()
+        step = 0
+        for ficheiro in sys.argv[1:]:
+            ficheiros[ficheiro] = 36000 + step
+            step+=3
+
+        print(f"Estou a ler {ficheiros}")
+        s.init_server(ficheiros)
 
     elif num_args < 2:
 
@@ -29,8 +36,9 @@ def main():
         s = socket(AF_INET, SOCK_STREAM)
         s.connect((serverAddr, int(serverPort)))
 
+        print(f"liguei-me ao {serverAddr}:{serverPort}")
         print("Consegui ligar-me ao server para pedir info de stream")
-
+        s.send(fileName.encode('utf-8'))
         dados = s.recv(1024).decode('utf-8')
 
         lista = dados.split("\n")

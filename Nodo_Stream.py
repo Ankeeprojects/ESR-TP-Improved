@@ -167,11 +167,10 @@ class Nodo_Stream:
 					self.state = self.INIT
 					self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				
-					# try:
-					# 	self.rtpSocket.settimeout(0.5)
-					# except:
-					# 	pass
-
+					try:
+						self.rtpSocket.settimeout(0.5)
+					except:
+						pass
 					self.rtpSocket.bind(('', 36000))
 				else:
 					self.rtspSeq += 1

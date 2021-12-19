@@ -30,14 +30,14 @@ class Servidor:
         self.server_port = 12000
         self.stream_loc_port = 36002
 
-    def init_server(self, ficheiro):
+    def init_server(self, ficheiros):
         threading.Thread(target=self.server).start()
         threading.Thread(target=self.hello_server).start()
         threading.Thread(target=self.activity_server).start()
-        threading.Thread(target=self.streaming_server, args=(ficheiro,)).start()
-        threading.Thread(target=self.stream_locator).start()
+        #threading.Thread(target=self.streaming_server, args=(ficheiros['movie.Mjpeg'],)).start()
+        threading.Thread(target=self.stream_locator, args=(ficheiros,)).start()
 
-    def stream_locator(self):
+    def stream_locator(self, ficheiros):
         s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind(('', self.stream_loc_port))
@@ -52,13 +52,19 @@ class Servidor:
             print(type(info[0]))
             node_id = self.topologia.get_node_info(str(info[0]))
             #print(f"Este cliente é o {node_id}")
+            mensagem = cliente.recv(256).decode('utf-8')
             
-            nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
-            mensagem = str(nodo_stream) + "\n" + str(36000)
-            print(f"O nodo mais próximo é o {nodo_stream}")
-            cliente.send(mensagem.encode('utf-8'))
+            print(f"O gajo está pedir {mensagem}")
 
-    def streaming_server(self, ficheiro):
+            nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
+            port = str(ficheiros[mensagem])
+
+            mensagem = str(nodo_stream) + "\n" + port
+            print(f"O nodo mais próximo é o {nodo_stream} e deve abrir a porta {port}")
+            cliente.send(mensagem.encode('utf-8'))
+            cliente.close()           
+
+    def streaming_server(self, ficheiros):
         self.ligacoes = Ligacoes_RTP.Ligacoes_RTP()
         
         self.rtspSocket = socket(AF_INET, SOCK_STREAM)
@@ -69,7 +75,8 @@ class Servidor:
         
         print(f"Streaming server a correr na porta {self.streaming_port}")
 
-        Server_Stream.Server_Stream(self.ligacoes, ficheiro).run()
+        
+        Server_Stream.Server_Stream(self.ligacoes, ficheiros).run()
         
         while True:
             clientInfo = {}
