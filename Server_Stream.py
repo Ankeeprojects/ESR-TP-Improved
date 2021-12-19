@@ -30,29 +30,28 @@ class Server_Stream:
             #Cena que quero meter do outro lado
             data = self.stream.nextFrame()
             #print("será?")
-            if data:
-                frameNumber = self.stream.frameNbr()     
-                if frameNumber % 30 == 0:
-                    print("Frame Number: " + str(frameNumber))
-                
-                self.ligacoes.lock.acquire() #novo
-                for elemento in self.ligacoes.connections.values():
-                    #print(elemento[1])
-                    if elemento[1] == 2:    
-                        try:
-                            address = elemento[0]['rtspSocket'][1][0]
-                            port = int(elemento[0]['rtpPort'])
-                            print(f"Estou a enviar para o {address}")
-    
-                            elemento[0]['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,port))
-                        except:
-                            print("Vizinho mudou!")
-                            # print("RTP Address: %s, Port: %d, FrameNum: %d" % (address,port,frameNumber))
-                            # print('-'*60)
-                            # traceback.print_exc(file=sys.stdout)
-                            # print('-'*60)
-                            # sys.exit(1)
-                self.ligacoes.lock.release()
+            frameNumber = self.stream.frameNbr()     
+            if frameNumber % 30 == 0:
+                print("Frame Number: " + str(frameNumber))
+            
+            self.ligacoes.lock.acquire() #novo
+            for elemento in self.ligacoes.connections.values():
+                #print(elemento[1])
+                if elemento[1] == 2:    
+                    try:
+                        address = elemento[0]['rtspSocket'][1][0]
+                        port = int(elemento[0]['rtpPort'])
+                        print(f"Estou a enviar para o {address}")
+
+                        elemento[0]['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,port))
+                    except:
+                        print("Vizinho mudou!")
+                        # print("RTP Address: %s, Port: %d, FrameNum: %d" % (address,port,frameNumber))
+                        # print('-'*60)
+                        # traceback.print_exc(file=sys.stdout)
+                        # print('-'*60)
+                        # sys.exit(1)
+            self.ligacoes.lock.release()
 
     def makeRtp(self, payload, frameNbr):
         """RTP-packetize the video data."""

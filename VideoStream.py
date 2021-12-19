@@ -1,24 +1,24 @@
+import cv2
+
 class VideoStream:
 	def __init__(self, filename):
 		self.filename = filename
 		try:
-			self.file = open(filename, 'rb')
+			self.file = cv2.VideoCapture(filename)
 		except:
 			raise IOError
 		self.frameNum = 0
 		
 	def nextFrame(self):
 		"""Get next frame."""
-		data = self.file.read(5) # Get the framelength from the first 5 bits
-		if not data: 
-			self.file.seek(0,0)
-			data = self.file.read(5)
+		success, data = self.file.read()
+		if not success: 
+			self.file.release()
+			self.file = cv2.VideoCapture(self.filename)
 			self.frameNum = 0
-		framelength = int(data)
-						
-		# Read the current frame
-		data = self.file.read(framelength)
+
 		self.frameNum += 1
+		data = cv2.imencode('.jpg', data)[1].tobytes()
 		return data
 		
 	def frameNbr(self):
