@@ -39,6 +39,7 @@ class Servidor:
 
     def stream_locator(self):
         s = socket(AF_INET, SOCK_STREAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind(('', self.stream_loc_port))
 
         s.listen()
@@ -60,9 +61,10 @@ class Servidor:
     def streaming_server(self, ficheiro):
         self.ligacoes = Ligacoes_RTP.Ligacoes_RTP()
         
-        rtspSocket = socket(AF_INET, SOCK_STREAM)
-        rtspSocket.bind(('', self.streaming_port))
-        rtspSocket.listen(5)        
+        self.rtspSocket = socket(AF_INET, SOCK_STREAM)
+        self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.rtspSocket.bind(('', self.streaming_port))
+        self.rtspSocket.listen(5)        
 		# Receive client info (address,port) through RTSP/TCP session
         
         print(f"Streaming server a correr na porta {self.streaming_port}")
@@ -71,7 +73,7 @@ class Servidor:
         
         while True:
             clientInfo = {}
-            clientInfo['rtspSocket'] = rtspSocket.accept()
+            clientInfo['rtspSocket'] = self.rtspSocket.accept()
             print("Connected to: %s" % str(clientInfo['rtspSocket'][1]))
             
             client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
@@ -82,6 +84,17 @@ class Servidor:
             ServerWorker(self.ligacoes, ficheiro, client_id).run()
             #server.recvRtspRequest()
         
+    def signal_handler(self, signal, frame):
+        print('You pressed Ctrl+C!')
+        try:
+            if self.stream.state == self.stream.PLAYING or self.stream.state == self.stream.READY:
+                print("Estava a transmitir mas morri") 
+                request = 'TEARDOWN ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.stream.rtspSeq)
+                self.stream.rtspSocket.send(request.encode())
+                self.stream.rtspSocket.close()
+            sys.exit(0)
+        except:
+                sys.exit(0)
 
     def activity_server(self):
         #s = socket(AF_INET, SOCK_STREAM)
@@ -205,6 +218,7 @@ class Servidor:
         """Função responsável por lidar com conexões de nodos para a ligação dos mesmos
         """
         s = socket(AF_INET, SOCK_STREAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind(('', self.server_port))
 
         s.listen()
@@ -314,6 +328,7 @@ class Servidor:
         port = 42000
 
         s = socket(AF_INET, SOCK_STREAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind((host, port))
 
         s.listen()

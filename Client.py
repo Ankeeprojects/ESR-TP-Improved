@@ -20,7 +20,7 @@ class Client:
 	PAUSE = 2
 	TEARDOWN = 3
 
-	REPEAT = False
+	REPEAT = True
 	
 	# Initiation..
 	def __init__(self, master, serveraddr, serverport, rtpport, filename, stream_locator, stream_loc_port):
@@ -49,30 +49,30 @@ class Client:
 		self.setup.grid(row=1, column=0, padx=2, pady=2)
 		
 		# Create Play button		
-		self.start = Button(self.master, width=20, padx=3, pady=3)
+		self.start = Button(self.master, width=10, padx=3, pady=3)
 		self.start["text"] = "Play"
 		self.start["command"] = self.playMovie
 		self.start.grid(row=1, column=1, padx=2, pady=2)
 		
 		# Create Pause button			
-		self.pause = Button(self.master, width=20, padx=3, pady=3)
+		self.pause = Button(self.master, width=5, padx=3, pady=3)
 		self.pause["text"] = "Pause"
 		self.pause["command"] = self.pauseMovie
 		self.pause.grid(row=1, column=2, padx=2, pady=2)
 		
 		# Create Teardown button
-		self.teardown = Button(self.master, width=20, padx=3, pady=3)
+		self.teardown = Button(self.master, width=10, padx=3, pady=3)
 		self.teardown["text"] = "Teardown"
 		self.teardown["command"] =  self.exitClient
 		self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
-		self.repeat = Button(self.master, width=20, padx=3, pady=3)
+		self.repeat = Button(self.master, width=10, padx=3, pady=3)
 		self.repeat["text"] = "Repeat"
 		self.repeat["command"] =  self.repeatAction
-		self.repeat.grid(row=1, column=4, padx=2, pady=2)
+		self.repeat.grid(row=2, column=1, padx=2, pady=2)
 
 		self.repeatLabel = Label(self.master, width=10, padx=20, pady=20)
-		self.repeatLabel['text'] = "Repeat: Deactivated"
+		self.repeatLabel['text'] = "Repeat: Activated"
 		self.repeatLabel.grid(row=2,column=0,padx=2,pady=2)
 		
 		# Create a label to display the movie
@@ -123,21 +123,24 @@ class Client:
 			"""or self.state == self.READY"""
 			if self.state == self.PLAYING: 
 				try:
-					data = self.rtpSocket.recv(20480)
-					rtpPacket = RtpPacket()
-					rtpPacket.decode(data)
+					data = self.rtpSocket.recv(25480)
 					
-					currFrameNbr = rtpPacket.seqNum()
-					if currFrameNbr % 30 == 0:
-						print("Current Seq Num: " + str(currFrameNbr))
-										
-					if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
-						self.frameNbr = currFrameNbr
-						#print("Payload length: " + str(len(rtpPacket.getPayload())))
-						self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-					elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
-						break
-					
+					if data:
+						rtpPacket = RtpPacket()
+						rtpPacket.decode(data)
+						
+						currFrameNbr = rtpPacket.seqNum()
+						if currFrameNbr % 30 == 0:
+							print("Current Seq Num: " + str(currFrameNbr))
+											
+						if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
+							self.frameNbr = currFrameNbr
+							#print("Payload length: " + str(len(rtpPacket.getPayload())))
+							self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
+						elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
+							break
+					else:
+						print("Fui co crl")	
 				except:
 					
 					# Upon receiving ACK for TEARDOWN request,

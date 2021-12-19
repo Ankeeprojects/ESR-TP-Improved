@@ -43,7 +43,7 @@ class Nodo:
         self.stream = Nodo_Stream(self.ligacoes, 'movie.Mjpeg')
         self.stream.run()
         
-
+        
     def hello(self):
         """Função que será threaded para envio de hello's para o servidor 
         de modo a manter o nodo como ativo do outro lado
@@ -71,7 +71,8 @@ class Nodo:
                 time.sleep(1)
             except BrokenPipeError:
                 print("O pipe morreu!")
-                
+                self.ligacao_behind.close()
+
             while behind == self.behind:
                 time.sleep(1)
                 pass    
@@ -146,10 +147,11 @@ class Nodo:
     
     def get_definicoes(self, s : socket, update : bool):
         """Função responsável por receber as condições do nodo (vizinhos e nodo anterior de overlay)
-
+        
         Args:
             s (Socket): socket da conexão
         """
+           
         tup = s.recv(1024).decode('utf-8').split('\n')
         
         #print("Consegui receber coisas!")
@@ -158,6 +160,9 @@ class Nodo:
         self.vizinhos = json.loads(tup[0])
         behind = json.loads(tup[1])
         #print(f"Behind = {behind}, self = {self.behind}")
+        
+        #IMPORTANTE TIRAR ISTO SE DER MERDA
+        """
         if self.behind is not None and self.behind != behind:
             #print("O gajo atrás mudou!")
             print("Estava a transmitir mas morri") 
@@ -165,7 +170,7 @@ class Nodo:
             self.stream.rtspSocket.send(request.encode())
         else:
             print("Não mudou ou não era None")
-
+        """
         self.behind = behind
         self.stream.behind = behind
 
@@ -212,9 +217,10 @@ class Nodo:
 
     def streaming_server(self, ficheiro):
         
-        rtspSocket = socket(AF_INET, SOCK_STREAM)
-        rtspSocket.bind(('', self.streaming_port))
-        rtspSocket.listen(5)        
+        self.rtspSocket = socket(AF_INET, SOCK_STREAM)
+        self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.rtspSocket.bind(('', self.streaming_port))
+        self.rtspSocket.listen(5)        
 		# Receive client info (address,port) through RTSP/TCP session
         
         print(f"Streaming server a correr na porta {self.streaming_port}")
@@ -222,7 +228,8 @@ class Nodo:
         
         while True:
             clientInfo = {}
-            clientInfo['rtspSocket'] = rtspSocket.accept()
+            
+            clientInfo['rtspSocket'] = self.rtspSocket.accept()
             print("Connected to: %s" % str(clientInfo['rtspSocket'][1]))
             client_ip = str(clientInfo['rtspSocket'][1][0])
             #client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
@@ -234,14 +241,26 @@ class Nodo:
             #server.recvRtspRequest()
 
     def signal_handler(self, signal, frame):
-        print('You pressed Ctrl+C!')
+        print(f'You pressed Ctrl+C! E o meu estado é {self.stream.state}')
         try:
-            if self.stream.state == (self.stream.PLAYING or self.stream.READY):
+            
+            print(f"As cenas do gajo são : {self.stream.ligacoes.items()}")
+            
+            for ligacao in self.stream.ligacoes.connections.values():
+                if ligacao[0].get('rtspSocket'):
+                    ligacao[0]['rtspSocket'].close()
+                    print("Matei este gajo!")
+                else:
+                    print("Não tinha!")
+
+            if self.stream.state == self.stream.PLAYING or self.stream.state == self.stream.READY:
                 print("Estava a transmitir mas morri") 
                 request = 'TEARDOWN ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.stream.rtspSeq)
-                self.stream.rtspSocket.send(request.encode())
-                self.stream.rtspSocket.close()
-                sys.exit(0)
+                self.stream.rtspSocket.send(request.encode())        
+            self.stream.rtspSocket.close()
+            self.rtspSocket.close()
+            print("Cheguei aqui bla")
+            sys.exit(0)
         except:
                 sys.exit(0)
 
