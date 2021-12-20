@@ -247,7 +247,7 @@ class Client:
 			print('\nPLAY event\n')
 			# Write the RTSP request to be sent.
 			# request = ...
-			request = 'PLAY ' + self.fileName + '\nCseq: ' + str(self.rtspSeq)
+			request = 'PLAY ' + self.fileName + '\nCseq: ' + str(self.rtspSeq) + "\n" + str(self.rtpPort)
 			# Keep track of the sent request.
 			# self.requestSent = ...
 			self.requestSent = self.PLAY

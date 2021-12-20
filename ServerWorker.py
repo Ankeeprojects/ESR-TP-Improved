@@ -66,34 +66,38 @@ class ServerWorker:
 		
 		# Process SETUP request
 		if requestType == self.SETUP:
-			
-			self.ligacoes[self.port].lock.acquire()
-			self.ligacoes[self.port].connections[self.id][1] = self.READY
+			rtp_port = int(request[2].split(' ')[3])
+
+			print(f"A Porta RTP disto é a {rtp_port}")
+
+			self.ligacoes[rtp_port].lock.acquire()
+			self.ligacoes[rtp_port].connections[self.id][1] = self.READY
 			
 			# Generate a randomized RTSP session ID
-			self.ligacoes[self.port].connections[self.id][0]['session'] = randint(100000, 999999)
+			self.ligacoes[rtp_port].connections[self.id][0]['session'] = randint(100000, 999999)
 			
 			# Send RTSP reply
 			self.replyRtsp(self.OK_200, seq[1])
 			
 			# Get the RTP/UDP port from the last line
-			self.ligacoes[self.port].connections[self.id][0]['rtpPort'] = request[2].split(' ')[3]
+			self.ligacoes[rtp_port].connections[self.id][0]['rtpPort'] = rtp_port
 
-			print(f"A Porta RTP disto é a {request[2].split(' ')[3]}")
 			#for nodo, cenas in self.ligacoes.connections.items():
 			#	print(f"O nodo {nodo} tem a info {cenas}")
 
-			self.ligacoes[self.port].lock.release()
+			self.ligacoes[rtp_port].lock.release()
 
 		#TODO
 		# Process PLAY request 		
 		elif requestType == self.PLAY:
+				porta = int(request[2])
+				print(f"A porta do play é a {porta}")
 			#if self.ligacoes.connections[self.id][1] == self.READY:
 				print("processing PLAY\n")
-				self.ligacoes[self.port].connections[self.id][1] = self.PLAYING
+				self.ligacoes[porta].connections[self.id][1] = self.PLAYING
 				
 				# Create a new socket for RTP/UDP
-				self.ligacoes[self.port].connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+				self.ligacoes[porta].connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				
 				self.replyRtsp(self.OK_200, seq[1])
 				
