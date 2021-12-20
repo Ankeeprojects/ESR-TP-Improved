@@ -23,13 +23,13 @@ class ServerWorker:
 
 	ficheiro : str
 
-	#server : bool
+	port : int
 
-	def __init__(self, ligacoes, ficheiro, id):
+	def __init__(self, ligacoes, ficheiro, id, port):
 		self.ligacoes = ligacoes
 		self.ficheiro = ficheiro
 		self.id = id
-		#self.server = server
+		self.port = port
 
 	def run(self):
 		threading.Thread(target=self.recvRtspRequest).start()
@@ -37,7 +37,7 @@ class ServerWorker:
 	def recvRtspRequest(self):
 		"""Receive RTSP request from the client."""
 		try:
-			connSocket = self.ligacoes.connections[self.id][0]['rtspSocket'][0]
+			connSocket = self.ligacoes[self.port].connections[self.id][0]['rtspSocket'][0]
 			while True:            
 				data = connSocket.recv(256)
 				if data:
@@ -67,33 +67,33 @@ class ServerWorker:
 		# Process SETUP request
 		if requestType == self.SETUP:
 			
-			self.ligacoes.lock.acquire()
-			self.ligacoes.connections[self.id][1] = self.READY
+			self.ligacoes[self.port].lock.acquire()
+			self.ligacoes[self.port].connections[self.id][1] = self.READY
 			
 			# Generate a randomized RTSP session ID
-			self.ligacoes.connections[self.id][0]['session'] = randint(100000, 999999)
+			self.ligacoes[self.port].connections[self.id][0]['session'] = randint(100000, 999999)
 			
 			# Send RTSP reply
 			self.replyRtsp(self.OK_200, seq[1])
 			
 			# Get the RTP/UDP port from the last line
-			self.ligacoes.connections[self.id][0]['rtpPort'] = request[2].split(' ')[3]
+			self.ligacoes[self.port].connections[self.id][0]['rtpPort'] = request[2].split(' ')[3]
 
+			print(f"A Porta RTP disto é a {request[2].split(' ')[3]}")
+			#for nodo, cenas in self.ligacoes.connections.items():
+			#	print(f"O nodo {nodo} tem a info {cenas}")
 
-			for nodo, cenas in self.ligacoes.connections.items():
-				print(f"O nodo {nodo} tem a info {cenas}")
-
-			self.ligacoes.lock.release()
+			self.ligacoes[self.port].lock.release()
 
 		#TODO
 		# Process PLAY request 		
 		elif requestType == self.PLAY:
 			#if self.ligacoes.connections[self.id][1] == self.READY:
 				print("processing PLAY\n")
-				self.ligacoes.connections[self.id][1] = self.PLAYING
+				self.ligacoes[self.port].connections[self.id][1] = self.PLAYING
 				
 				# Create a new socket for RTP/UDP
-				self.ligacoes.connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+				self.ligacoes[self.port].connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				
 				self.replyRtsp(self.OK_200, seq[1])
 				
@@ -104,9 +104,9 @@ class ServerWorker:
 		
 		# Process PAUSE request
 		elif requestType == self.PAUSE:
-			if self.ligacoes.connections[self.id][1] == self.PLAYING:
+			if self.ligacoes[self.port].connections[self.id][1] == self.PLAYING:
 				print("processing PAUSE\n")
-				self.ligacoes.connections[self.id][1] = self.READY
+				self.ligacoes[self.port].connections[self.id][1] = self.READY
 				
 				#self.clientInfo['event'].set()
 			
@@ -121,12 +121,12 @@ class ServerWorker:
 			
 			self.replyRtsp(self.OK_200, seq[1])
 
-			if self.ligacoes.connections.get(self.id):
-				self.ligacoes.lock.acquire()
-				self.ligacoes.connections[self.id][0]['rtpSocket'].close()
-				self.ligacoes.connections.pop(self.id)
-				self.ligacoes.lock.release()
-			for nodo in self.ligacoes.connections.keys():
+			if self.ligacoes[self.port].connections.get(self.id):
+				self.ligacoes[self.port].lock.acquire()
+				self.ligacoes[self.port].connections[self.id][0]['rtpSocket'].close()
+				self.ligacoes[self.port].connections.pop(self.id)
+				self.ligacoes[self.port].lock.release()
+			for nodo in self.ligacoes[self.port].connections.keys():
 				print(nodo)
 			# Close the RTP socket
 			#if 'rtpSocket' in self.clientInfo:
@@ -179,8 +179,8 @@ class ServerWorker:
 		"""Send RTSP reply to the client."""
 		if code == self.OK_200:
 			#print("200 OK")
-			reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.ligacoes.connections[self.id][0]['session'])
-			connSocket = self.ligacoes.connections[self.id][0]['rtspSocket'][0]
+			reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.ligacoes[self.port].connections[self.id][0]['session'])
+			connSocket = self.ligacoes[self.port].connections[self.id][0]['rtspSocket'][0]
 			connSocket.send(reply.encode())
 		
 		# Error messages

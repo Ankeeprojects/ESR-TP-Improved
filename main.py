@@ -9,7 +9,7 @@ def main():
     num_args = len(sys.argv)
     print(num_args)
     if num_args == 3:
-        s = Servidor()
+        
         ficheiros = dict()
         step = 0
         for ficheiro in sys.argv[1:]:
@@ -17,7 +17,8 @@ def main():
             step+=3
 
         print(f"Estou a ler {ficheiros}")
-        s.init_server(ficheiros)
+        s = Servidor(ficheiros)
+        s.init_server()
 
     elif num_args < 2:
 

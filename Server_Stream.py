@@ -7,19 +7,19 @@ import sys
 import time
 
 class Server_Stream:
-    ligacoes : list
-    stream : VideoStream
-    ligacoes : Ligacoes_RTP.Ligacoes_RTP
+    ligacoes : dict
 
-    def __init__(self, ligacoes, filename):
+    def __init__(self, ligacoes):
         self.ligacoes = ligacoes
-        self.stream = VideoStream(filename)
+        
+    def run(self, ficheiros):
+        for ficheiro, porta in ficheiros.items():
+            print(f"Ficheiro: {ficheiro} porta: {porta}")
+            threading.Thread(target=self.sendRtp, args=(ficheiro,porta)).start()
 
-    def run(self, port):
-        threading.Thread(target=self.sendRtp, args=(port,)).start()
-
-    def sendRtp(self, port : int):
+    def sendRtp(self, ficheiro, porta):
         """Send RTP packets over UDP."""
+        stream = VideoStream(ficheiro)
         while True:
             #self.clientInfo['event'].wait(0.05) 
             time.sleep(0.03)
@@ -28,22 +28,23 @@ class Server_Stream:
             #        break 
                     
             #Cena que quero meter do outro lado
-            data = self.stream.nextFrame()
+            data = stream.nextFrame()
             #print("será?")
-            frameNumber = self.stream.frameNbr()     
+            frameNumber = stream.frameNbr()     
             if frameNumber % 30 == 0:
-                print("Frame Number: " + str(frameNumber))
+                print(f"Ficheiro: {ficheiro} Frame Number: {frameNumber} Porta: {porta}")
             
-            self.ligacoes.lock.acquire() #novo
-            for elemento in self.ligacoes.connections.values():
+            self.ligacoes[porta].lock.acquire() #novo
+            for elemento in self.ligacoes[porta].connections.values():
                 #print(elemento[1])
                 if elemento[1] == 2:    
                     try:
                         address = elemento[0]['rtspSocket'][1][0]
-                        port = int(elemento[0]['rtpPort'])
-                        print(f"Estou a enviar para o {address}")
+                        #VOLTAR A METER
+                        #port = int(elemento[0]['rtpPort'])
+                        print(f"Estou a enviar para o {address}:{porta}")
 
-                        elemento[0]['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,port))
+                        elemento[0]['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,porta))
                     except:
                         print("Vizinho mudou!")
                         # print("RTP Address: %s, Port: %d, FrameNum: %d" % (address,port,frameNumber))
@@ -51,7 +52,7 @@ class Server_Stream:
                         # traceback.print_exc(file=sys.stdout)
                         # print('-'*60)
                         # sys.exit(1)
-            self.ligacoes.lock.release()
+            self.ligacoes[porta].lock.release()
 
     def makeRtp(self, payload, frameNbr):
         """RTP-packetize the video data."""

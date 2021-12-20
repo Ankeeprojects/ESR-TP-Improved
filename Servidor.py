@@ -18,8 +18,10 @@ class Servidor:
     topologia : Topologia
     streaming_port : int
     server_port : int
+    ligacoes : dict
+    ficheiros : dict
 
-    def __init__(self):
+    def __init__(self, ficheiros):
         self.nodos_atividade = dict()
         self.num_thread = 0
         self.threads = dict()
@@ -29,15 +31,17 @@ class Servidor:
         self.streaming_port = 36001
         self.server_port = 12000
         self.stream_loc_port = 36002
+        self.ligacoes = dict()
+        self.ficheiros = ficheiros
 
-    def init_server(self, ficheiros):
+    def init_server(self):
         threading.Thread(target=self.server).start()
         threading.Thread(target=self.hello_server).start()
         threading.Thread(target=self.activity_server).start()
-        #threading.Thread(target=self.streaming_server, args=(ficheiros['movie.Mjpeg'],)).start()
-        threading.Thread(target=self.stream_locator, args=(ficheiros,)).start()
+        threading.Thread(target=self.streaming_server).start()
+        threading.Thread(target=self.stream_locator).start()
 
-    def stream_locator(self, ficheiros):
+    def stream_locator(self):
         s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         s.bind(('', self.stream_loc_port))
@@ -57,15 +61,16 @@ class Servidor:
             print(f"O gajo está pedir {mensagem}")
 
             nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
-            port = str(ficheiros[mensagem])
+            port = str(self.ficheiros[mensagem])
 
             mensagem = str(nodo_stream) + "\n" + port
             print(f"O nodo mais próximo é o {nodo_stream} e deve abrir a porta {port}")
             cliente.send(mensagem.encode('utf-8'))
             cliente.close()           
 
-    def streaming_server(self, ficheiros):
-        self.ligacoes = Ligacoes_RTP.Ligacoes_RTP()
+    def streaming_server(self):
+        for ficheiro, porta in self.ficheiros.items():
+            self.ligacoes[porta] = Ligacoes_RTP.Ligacoes_RTP()
         
         self.rtspSocket = socket(AF_INET, SOCK_STREAM)
         self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -75,9 +80,8 @@ class Servidor:
         
         print(f"Streaming server a correr na porta {self.streaming_port}")
 
-        
-        Server_Stream.Server_Stream(self.ligacoes, ficheiros).run()
-        
+        Server_Stream.Server_Stream(self.ligacoes).run(self.ficheiros)
+
         while True:
             clientInfo = {}
             clientInfo['rtspSocket'] = self.rtspSocket.accept()
@@ -87,8 +91,11 @@ class Servidor:
             print(f"O cliente é o {client_id}")
             print(str(clientInfo['rtspSocket']))
             
-            self.ligacoes.connections[client_id] = [clientInfo, "INIT"]
-            ServerWorker(self.ligacoes, ficheiro, client_id).run()
+            
+            for ficheiro, porta in self.ficheiros.items():
+                self.ligacoes[porta].connections[client_id] = [clientInfo, "INIT"]
+            
+            ServerWorker(self.ligacoes, self.ficheiros, client_id, 36000 ).run()
             #server.recvRtspRequest()
         
     def signal_handler(self, signal, frame):

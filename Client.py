@@ -121,10 +121,11 @@ class Client:
 			server = self.serverAddr
 			#print(f"O meu estado é {self.state}, ready é {self.READY} e playing é {self.PLAYING}")
 			"""or self.state == self.READY"""
-			if self.state == self.PLAYING: 
+			if self.state == self.PLAYING or self.state == self.READY: 
 				try:
+					#print(self.rtpSocket)
 					data = self.rtpSocket.recv(25480)
-					
+					#print("recebi alguma coisa!")
 					if data:
 						rtpPacket = RtpPacket()
 						rtpPacket.decode(data)
@@ -363,6 +364,7 @@ class Client:
 			pass
 		try:
 			self.rtpSocket.bind(('',self.rtpPort))
+			print(f"A porta é {self.rtpPort}")
 			# Bind the socket to the address using the RTP port given by the client user
 			# ...
 			print('\nBind \n')
