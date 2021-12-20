@@ -260,7 +260,7 @@ class Client:
 			
 			# Write the RTSP request to be sent.
 			# request = ...
-			request = 'PAUSE ' + self.fileName + '\nCseq: ' + str(self.rtspSeq)
+			request = 'PAUSE ' + self.fileName + '\nCseq: ' + str(self.rtspSeq) + '\n' + str(self.rtpPort)
 			# Keep track of the sent request.
 			# self.requestSent = ...
 			self.requestSent = self.PAUSE

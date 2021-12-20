@@ -108,9 +108,11 @@ class ServerWorker:
 		
 		# Process PAUSE request
 		elif requestType == self.PAUSE:
-			if self.ligacoes[self.port].connections[self.id][1] == self.PLAYING:
+			porta = int(request[2])
+			print(f"A PORTA DO PAUSE É A {porta}")
+			if self.ligacoes[porta].connections[self.id][1] == self.PLAYING:
 				print("processing PAUSE\n")
-				self.ligacoes[self.port].connections[self.id][1] = self.READY
+				self.ligacoes[porta].connections[self.id][1] = self.READY
 				
 				#self.clientInfo['event'].set()
 			
@@ -125,13 +127,14 @@ class ServerWorker:
 			
 			self.replyRtsp(self.OK_200, seq[1])
 
-			if self.ligacoes[self.port].connections.get(self.id):
-				self.ligacoes[self.port].lock.acquire()
-				self.ligacoes[self.port].connections[self.id][0]['rtpSocket'].close()
-				self.ligacoes[self.port].connections.pop(self.id)
-				self.ligacoes[self.port].lock.release()
-			for nodo in self.ligacoes[self.port].connections.keys():
-				print(nodo)
+			for porta in self.ligacoes:
+				if self.ligacoes[porta].connections.get(self.id):
+					self.ligacoes[porta].lock.acquire()
+					self.ligacoes[porta].connections[self.id][0]['rtpSocket'].close()
+					self.ligacoes[porta].connections.pop(self.id)
+					self.ligacoes[porta].lock.release()
+			#for nodo in self.ligacoes[self.port].connections.keys():
+			#	print(nodo)
 			# Close the RTP socket
 			#if 'rtpSocket' in self.clientInfo:
 			
