@@ -32,9 +32,9 @@ def main():
 
         mensagem = s.recv(256).decode('utf-8').split("\n")
 
-        print(mensagem)
-
-        n = Nodo(mensagem)
+        portas = [int(x) for x in mensagem[:-1]]
+        print(portas)
+        n = Nodo(portas)
         n.init(server_ip, 12000)
 
     elif num_args == 4:

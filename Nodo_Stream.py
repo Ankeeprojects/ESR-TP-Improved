@@ -39,6 +39,7 @@ class Nodo_Stream:
 		self.frameNbr = 0
 		self.state = dict()
 
+		self.rtpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		try:
 			self.rtpSocket.settimeout(0.5)
 		except:
@@ -46,13 +47,12 @@ class Nodo_Stream:
 
 		self.rtpSocket.bind(('', 36000))
 
-	def run(self, portas):
-		for porta in portas[:-1]:
-			threading.Thread(target=self.sendRtp, args=(porta,)).start()
-			self.state[porta] = 0
-			self.requestSent[porta] = -1
-			self.rtspSeq[porta] = 0
-			self.sessionId[porta] = 0
+	def run(self, porta):
+		threading.Thread(target=self.sendRtp, args=(porta,)).start()
+		self.state = 0
+		self.requestSent = -1
+		self.rtspSeq = 0
+		self.sessionId = 0
 
 
 	def sendRtp(self, porta):
@@ -67,7 +67,7 @@ class Nodo_Stream:
 				#        break         
 				#Cena que quero meter do outro lado		
 			behind = self.behind	
-			if self.state[porta] == self.PLAYING and behind == self.behind:
+			if self.state == self.PLAYING and behind == self.behind:
 				try:
 					#print("Cheguei aqui e estou a tentar receber qualquer coisa")
 					data = self.rtpSocket.recv(20480)
@@ -141,7 +141,7 @@ class Nodo_Stream:
 						# close the RTP socket
 						print("Dei timeout!")
 
-						self.state[porta] = self.TIMEOUT		
+						self.state = self.TIMEOUT		
 						try :
 							#if self.teardownAcked == 1:
 								#self.rtpSocket.shutdown(socket.SHUT_RDWR)
@@ -168,10 +168,10 @@ class Nodo_Stream:
 				
 				threading.Thread(target=self.recvRtspReply).start()
 
-				if self.state[porta] == self.TIMEOUT:
+				if self.state == self.TIMEOUT:
 					print("Entrei nesta cena")
-					self.rtspSeq[porta] = 1
-					self.state[porta] = self.INIT
+					self.rtspSeq = 1
+					self.state = self.INIT
 					self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 					self.rtpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 					
@@ -181,11 +181,11 @@ class Nodo_Stream:
 						pass
 					self.rtpSocket.bind(('', porta))
 				else:
-					self.rtspSeq[porta] += 1
+					self.rtspSeq += 1
 
 				print(self.rtpSocket)
-				print(f'vou enviar um rtsp de {self.rtspSeq[porta]}')
-				request = 'SETUP ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq[porta]) + '\nRTP PORT NUM: ' + str(porta)
+				print(f'vou enviar um rtsp de {self.rtspSeq}')
+				request = 'SETUP ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq) + '\nRTP PORT NUM: ' + str(porta)
 
 				#maybe not needed
 				self.requestSent = self.SETUP
@@ -198,26 +198,26 @@ class Nodo_Stream:
 				# else:
 				# 	print("nope!")
 				# time.sleep(10)
-				print(self.state[porta])
-				while self.state[porta] == self.INIT:
+				print(self.state)
+				while self.state == self.INIT:
 					time.sleep(0.2)
 
-				self.rtspSeq[porta] += 1
+				self.rtspSeq += 1
 		
 				print('\nPLAY event\n')
 				
 				print("aqui também?")
 				# Write the RTSP request to be sent.
 				# request = ...
-				request = 'PLAY ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq[porta])
+				request = 'PLAY ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq)
 				# Keep track of the sent request.
 				# self.requestSent = ...
-				self.requestSent[porta] = self.PLAY	
+				self.requestSent = self.PLAY	
 				#print("será?")
 
 				self.rtspSocket.send(request.encode())
 
-				while self.state[porta] != self.PLAYING:
+				while self.state != self.PLAYING:
 					time.sleep(0.2)
 
 				print("ESTOU A PLAYAR")

@@ -24,10 +24,10 @@ class Nodo:
     streaming_port: int
     id: int
     ip_updates: str
-    stream: Nodo_Stream
+    stream: dict
     ligacoes : dict
 
-    def __init__(self, mensagem):
+    def __init__(self, portas):
         self.host = AF_INET
         self.hello_port = 42000
         self.behind = None
@@ -38,9 +38,12 @@ class Nodo:
         self.network_port = 41999
         self.ipupdates = ""
         self.streaming_port = 36001 #Maybe change this
+        self.portas = portas
+        self.stream = dict()
         self.ligacoes = dict()
-        self.stream = Nodo_Stream(self.ligacoes)
-        self.stream.run(mensagem)
+        
+        for porta in portas:
+            self.ligacoes[porta] = Ligacoes_RTP.Ligacoes_RTP()
         
         
     def hello(self):
@@ -171,7 +174,8 @@ class Nodo:
             print("Não mudou ou não era None")
         """
         self.behind = behind
-        self.stream.behind = behind
+        #for porta in self.portas:
+        #    self.stream[porta].behind = behind
 
         #print(f"O behind do stream é o {self.stream.behind}")
 
@@ -200,56 +204,64 @@ class Nodo:
         while True:
             servidor, info = s.accept()
             self.get_definicoes(servidor, True)
-            
+
+            for porta in self.portas:
+                self.stream[porta].behind = self.behind
             #print("recebi isto porque sou burro :)")
             #tmp = threading.Thread(target=self.teste, args=(servidor, info)) #novo
             #tmp.start() #novo
             
 
-    def streaming_server(self, ficheiro):
-        
-        self.rtspSocket = socket(AF_INET, SOCK_STREAM)
-        self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.rtspSocket.bind(('', self.streaming_port))
-        self.rtspSocket.listen(5)  
+    def streaming_server(self, porta):
+        self.stream[porta] = Nodo_Stream(self.ligacoes)
+        self.stream[porta].behind = self.behind
+        self.stream[porta].run(porta)
+            
+        rtspSocket = socket(AF_INET, SOCK_STREAM)
+        rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        rtspSocket.bind(('', porta+1))
+        rtspSocket.listen(5)  
 		# Receive client info (address,port) through RTSP/TCP session
         
-        print(f"Streaming server a correr na porta {self.streaming_port}")
+        print(f"Streaming server a correr na porta {porta+1}")
 
         
         while True:
             clientInfo = {}
             
-            clientInfo['rtspSocket'] = self.rtspSocket.accept()
+            clientInfo['rtspSocket'] = rtspSocket.accept()
             print("Connected to: %s" % str(clientInfo['rtspSocket'][1]))
             client_ip = str(clientInfo['rtspSocket'][1][0])
             #client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
-            #print(f"O cliente é o {client_id}")
+            #print(f"O cliente é o[ {client_id}")
             print(str(clientInfo['rtspSocket']))
             
-            self.ligacoes.connections[client_ip] = [clientInfo, "INIT"]
-            ServerWorker.ServerWorker(self.ligacoes, ficheiro, client_ip).run()
+            self.ligacoes[porta].connections[client_ip] = [clientInfo, "INIT"]
+            ServerWorker.ServerWorker(self.ligacoes, porta, client_ip, porta).run()
             #server.recvRtspRequest()
 
     def signal_handler(self, signal, frame):
-        print(f'You pressed Ctrl+C! E o meu estado é {self.stream.state}')
+        #print(f'You pressed Ctrl+C! E o meu estado é {self.stream.state}')
         try:
             
             print(f"As cenas do gajo são : {self.stream.ligacoes.items()}")
-            
-            for ligacao in self.stream.ligacoes.connections.values():
-                if ligacao[0].get('rtspSocket'):
-                    ligacao[0]['rtspSocket'].close()
-                    print("Matei este gajo!")
-                else:
-                    print("Não tinha!")
 
-            if self.stream.state == self.stream.PLAYING or self.stream.state == self.stream.READY:
-                print("Estava a transmitir mas morri") 
-                request = 'TEARDOWN ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.stream.rtspSeq)
-                self.stream.rtspSocket.send(request.encode())        
-            self.stream.rtspSocket.close()
-            self.rtspSocket.close()
+            for ligacao in self.ligacoes:
+                for user in ligacao.connections.values():
+                    if user[0].get('rtspSocket'):
+                        user[0]['rtspSocket'].close()
+                        print("Matei este gajo!")
+                    else:
+                        print("Não tinha!")
+            
+            for porta in self.portas:
+                if self.stream[porta].state == self.stream[porta].PLAYING or self.stream[porta].state == self.stream[porta].READY:
+                    print("Estava a transmitir mas morri") 
+                    request = 'TEARDOWN ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.stream[porta].rtspSeq)
+                    self.stream.rtspSocket.send(request.encode())        
+            #self.stream.rtspSocket.close()
+            for porta in self.portas:
+                self.stream[porta].rtspSocket.close()
             print("Cheguei aqui bla")
             sys.exit(0)
         except:
@@ -283,7 +295,8 @@ class Nodo:
         
         s.close()
         try :
-            threading.Thread(target=self.streaming_server, args= ('movie.Mjpeg',)).start() 
+            for porta in self.portas:
+                threading.Thread(target=self.streaming_server, args= (porta,)).start() 
             threading.Thread(target=self.network_updates).start()    
             threading.Thread(target=self.forward).start()
             threading.Thread(target=self.hello).start()
