@@ -25,9 +25,9 @@ class Nodo:
     id: int
     ip_updates: str
     stream: Nodo_Stream
-    ligacoes : Ligacoes_RTP.Ligacoes_RTP
+    ligacoes : dict
 
-    def __init__(self):
+    def __init__(self, mensagem):
         self.host = AF_INET
         self.hello_port = 42000
         self.behind = None
@@ -38,10 +38,9 @@ class Nodo:
         self.network_port = 41999
         self.ipupdates = ""
         self.streaming_port = 36001 #Maybe change this
-        self.stream = None
-        self.ligacoes = Ligacoes_RTP.Ligacoes_RTP()
-        self.stream = Nodo_Stream(self.ligacoes, 'movie.Mjpeg')
-        self.stream.run()
+        self.ligacoes = dict()
+        self.stream = Nodo_Stream(self.ligacoes)
+        self.stream.run(mensagem)
         
         
     def hello(self):
@@ -206,14 +205,6 @@ class Nodo:
             #tmp = threading.Thread(target=self.teste, args=(servidor, info)) #novo
             #tmp.start() #novo
             
-    """       
-    def teste(self, servidor : socket, info):
-        self.get_definicoes(servidor, True)
-            
-        #servidor.shutdown() #novo
-        servidor.close()
-        sys.exit(0)
-    """
 
     def streaming_server(self, ficheiro):
         

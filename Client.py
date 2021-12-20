@@ -23,12 +23,12 @@ class Client:
 	REPEAT = True
 	
 	# Initiation..
-	def __init__(self, master, serveraddr, serverport, rtpport, filename, stream_locator, stream_loc_port):
+	def __init__(self, master, serveraddr, rtpport, filename, stream_locator, stream_loc_port):
 		self.master = master
 		self.master.protocol("WM_DELETE_WINDOW", self.handler)
 		self.createWidgets()
 		self.serverAddr = serveraddr
-		self.serverPort = int(serverport)
+		self.serverPort = int(rtpport) + 1
 		self.rtpPort = int(rtpport)
 		self.fileName = filename
 		self.rtspSeq = 0

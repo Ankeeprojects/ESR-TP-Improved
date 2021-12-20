@@ -60,12 +60,20 @@ class Servidor:
             
             print(f"O gajo está pedir {mensagem}")
 
-            nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
-            port = str(self.ficheiros[mensagem])
+            if mensagem[0] != '0':
+                nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
+                port = str(self.ficheiros[mensagem])
 
-            mensagem = str(nodo_stream) + "\n" + port
-            print(f"O nodo mais próximo é o {nodo_stream} e deve abrir a porta {port}")
-            cliente.send(mensagem.encode('utf-8'))
+                resposta = str(nodo_stream) + "\n" + port
+                print(f"O nodo mais próximo é o {nodo_stream} e deve abrir a porta {port}")
+            else:
+                resposta = ''
+                for ficheiro, porta in self.ficheiros.items():
+                    resposta += f"{porta}\n"
+
+                print(f"A resposta é {resposta}")
+
+            cliente.send(resposta.encode('utf-8'))
             cliente.close()           
 
     def streaming_server(self):
@@ -182,13 +190,15 @@ class Servidor:
         #print(f'node_id tem o tipo {type(node_id)}')
         self.nodos_atividade[node_id] = datetime.now()
 
+        """
         if self.topologia.get_behind(node_id) == '10.0.3.10':
             self.ligacoes.lock.acquire()
             self.ligacoes.connections = dict()
             self.ligacoes.lock.release()
+        """
         #s.bind(('', 42001)
         #time.sleep(3)
-        #TODO: VER COMO CHEGAR AO IP CORRETO
+        
         for nodo, _ in self.nodos_atividade.items():
             print(f"node_id = {node_id} node = {nodo} starter= {self.topologia.starter_node}")
             if nodo != self.topologia.get_starter_node():

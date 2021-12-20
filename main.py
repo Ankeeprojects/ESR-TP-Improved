@@ -25,7 +25,16 @@ def main():
         with open("config","r") as file:
             server_ip = re.split(" ",file.readline()[:-1])[1]
         
-        n = Nodo()
+        s = socket(AF_INET, SOCK_STREAM)
+        s.connect((server_ip, 36002))
+
+        s.send('0'.encode('utf-8'))
+
+        mensagem = s.recv(256).decode('utf-8').split("\n")
+
+        print(mensagem)
+
+        n = Nodo(mensagem)
         n.init(server_ip, 12000)
 
     elif num_args == 4:
@@ -50,7 +59,7 @@ def main():
         root = Tk()
         try:
             # Create a new client
-            app = Client(root, ip, 36001, rtpPort, fileName, serverAddr, serverPort)
+            app = Client(root, ip, rtpPort, fileName, serverAddr, serverPort)
             app.master.title("RTPClient")	
             root.mainloop()
             root.update()
