@@ -12,10 +12,9 @@ class Server_Stream:
     def __init__(self, ligacoes):
         self.ligacoes = ligacoes
         
-    def run(self, ficheiros):
-        for ficheiro, porta in ficheiros.items():
-            print(f"Ficheiro: {ficheiro} porta: {porta}")
-            threading.Thread(target=self.sendRtp, args=(ficheiro,porta)).start()
+    def run(self, ficheiro, porta):
+        print(f"Ficheiro: {ficheiro} porta: {porta}")
+        threading.Thread(target=self.sendRtp, args=(ficheiro,porta)).start()
 
     def sendRtp(self, ficheiro, porta):
         """Send RTP packets over UDP."""

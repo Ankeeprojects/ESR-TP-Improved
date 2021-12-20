@@ -215,6 +215,7 @@ class Client:
 		"""Connect to the Server. Start a new RTSP/TCP session."""
 		self.rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
+			print(f"A tentar conectar-me ao {self.serverAddr}:{self.serverPort}")
 			self.rtspSocket.connect((self.serverAddr, self.serverPort))
 			print("Connected to " + self.serverAddr)
 		except:

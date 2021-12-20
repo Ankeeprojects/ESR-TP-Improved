@@ -34,11 +34,18 @@ class Servidor:
         self.ligacoes = dict()
         self.ficheiros = ficheiros
 
+        for ficheiro, porta in self.ficheiros.items():
+            self.ligacoes[porta] = Ligacoes_RTP.Ligacoes_RTP()
+        
+
     def init_server(self):
         threading.Thread(target=self.server).start()
         threading.Thread(target=self.hello_server).start()
         threading.Thread(target=self.activity_server).start()
-        threading.Thread(target=self.streaming_server).start()
+
+        for ficheiro, porta in self.ficheiros.items():
+            print(f"Servidor com o ficheiro {ficheiro} e a porta {porta}")
+            threading.Thread(target=self.streaming_server, args=(ficheiro,porta)).start()
         threading.Thread(target=self.stream_locator).start()
 
     def stream_locator(self):
@@ -76,34 +83,32 @@ class Servidor:
             cliente.send(resposta.encode('utf-8'))
             cliente.close()           
 
-    def streaming_server(self):
-        for ficheiro, porta in self.ficheiros.items():
-            self.ligacoes[porta] = Ligacoes_RTP.Ligacoes_RTP()
+    def streaming_server(self, ficheiro, porta):
         
-        self.rtspSocket = socket(AF_INET, SOCK_STREAM)
-        self.rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.rtspSocket.bind(('', self.streaming_port))
-        self.rtspSocket.listen(5)        
+        rtspSocket = socket(AF_INET, SOCK_STREAM)
+        rtspSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        rtspSocket.bind(('', porta+1))
+        rtspSocket.listen(5)        
 		# Receive client info (address,port) through RTSP/TCP session
         
-        print(f"Streaming server a correr na porta {self.streaming_port}")
+        print(f"Streaming server a correr na porta RTSP {porta+1}")
 
-        Server_Stream.Server_Stream(self.ligacoes).run(self.ficheiros)
+        Server_Stream.Server_Stream(self.ligacoes).run(ficheiro, porta)
 
         while True:
             clientInfo = {}
-            clientInfo['rtspSocket'] = self.rtspSocket.accept()
+            clientInfo['rtspSocket'] = rtspSocket.accept()
             print("Connected to: %s" % str(clientInfo['rtspSocket'][1]))
             
             client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
-            print(f"O cliente é o {client_id}")
+            print(f"O cliente é o {client_id} e recebi isto na porta {porta+1}")
             print(str(clientInfo['rtspSocket']))
             
             
-            for ficheiro, porta in self.ficheiros.items():
-                self.ligacoes[porta].connections[client_id] = [clientInfo, "INIT"]
+            #for ficheiro, porta in self.ficheiros.items():
+            self.ligacoes[porta].connections[client_id] = [clientInfo, "INIT"]
             
-            ServerWorker(self.ligacoes, self.ficheiros, client_id, 36000 ).run()
+            ServerWorker(self.ligacoes, self.ficheiros, client_id, porta).run()
             #server.recvRtspRequest()
         
     def signal_handler(self, signal, frame):

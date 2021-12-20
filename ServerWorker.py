@@ -66,38 +66,33 @@ class ServerWorker:
 		
 		# Process SETUP request
 		if requestType == self.SETUP:
-			rtp_port = int(request[2].split(' ')[3])
-
-			print(f"A Porta RTP disto é a {rtp_port}")
-
-			self.ligacoes[rtp_port].lock.acquire()
-			self.ligacoes[rtp_port].connections[self.id][1] = self.READY
+			self.ligacoes[self.port].lock.acquire()
+			self.ligacoes[self.port].connections[self.id][1] = self.READY
 			
+			print(f"Recebi um pedido na porta {self.port}")
 			# Generate a randomized RTSP session ID
-			self.ligacoes[rtp_port].connections[self.id][0]['session'] = randint(100000, 999999)
+			self.ligacoes[self.port].connections[self.id][0]['session'] = randint(100000, 999999)
 			
 			# Send RTSP reply
 			self.replyRtsp(self.OK_200, seq[1])
 			
 			# Get the RTP/UDP port from the last line
-			self.ligacoes[rtp_port].connections[self.id][0]['rtpPort'] = rtp_port
+			self.ligacoes[self.port].connections[self.id][0]['rtpPort'] = self.port
 
 			#for nodo, cenas in self.ligacoes.connections.items():
 			#	print(f"O nodo {nodo} tem a info {cenas}")
 
-			self.ligacoes[rtp_port].lock.release()
+			self.ligacoes[self.port].lock.release()
 
 		#TODO
 		# Process PLAY request 		
 		elif requestType == self.PLAY:
-				porta = int(request[2])
-				print(f"A porta do play é a {porta}")
 			#if self.ligacoes.connections[self.id][1] == self.READY:
 				print("processing PLAY\n")
-				self.ligacoes[porta].connections[self.id][1] = self.PLAYING
+				self.ligacoes[self.port].connections[self.id][1] = self.PLAYING
 				
 				# Create a new socket for RTP/UDP
-				self.ligacoes[porta].connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+				self.ligacoes[self.port].connections[self.id][0]["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				
 				self.replyRtsp(self.OK_200, seq[1])
 				
@@ -108,11 +103,9 @@ class ServerWorker:
 		
 		# Process PAUSE request
 		elif requestType == self.PAUSE:
-			porta = int(request[2])
-			print(f"A PORTA DO PAUSE É A {porta}")
-			if self.ligacoes[porta].connections[self.id][1] == self.PLAYING:
+			if self.ligacoes[self.port].connections[self.id][1] == self.PLAYING:
 				print("processing PAUSE\n")
-				self.ligacoes[porta].connections[self.id][1] = self.READY
+				self.ligacoes[self.port].connections[self.id][1] = self.READY
 				
 				#self.clientInfo['event'].set()
 			
@@ -128,11 +121,11 @@ class ServerWorker:
 			self.replyRtsp(self.OK_200, seq[1])
 
 			for porta in self.ligacoes:
-				if self.ligacoes[porta].connections.get(self.id):
-					self.ligacoes[porta].lock.acquire()
-					self.ligacoes[porta].connections[self.id][0]['rtpSocket'].close()
-					self.ligacoes[porta].connections.pop(self.id)
-					self.ligacoes[porta].lock.release()
+				if self.ligacoes[self.port].connections.get(self.id):
+					self.ligacoes[self.port].lock.acquire()
+					self.ligacoes[self.port].connections[self.id][0]['rtpSocket'].close()
+					self.ligacoes[self.port].connections.pop(self.id)
+					self.ligacoes[self.port].lock.release()
 			#for nodo in self.ligacoes[self.port].connections.keys():
 			#	print(nodo)
 			# Close the RTP socket
