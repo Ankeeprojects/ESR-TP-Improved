@@ -61,7 +61,7 @@ class Servidor:
             cliente, info = s.accept()
             print("cheguei aqui!")
             print(type(info[0]))
-            node_id = self.topologia.get_node_info(str(info[0]))
+            #node_id = self.topologia.get_node_info(str(info[0]))
             #print(f"Este cliente é o {node_id}")
             mensagem = cliente.recv(256).decode('utf-8')
             

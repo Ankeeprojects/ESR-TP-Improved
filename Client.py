@@ -122,7 +122,7 @@ class Client:
 			#print(f"O meu estado é {self.state}, ready é {self.READY} e playing é {self.PLAYING}")
 			"""or self.state == self.READY"""
 			if self.state == self.PLAYING or self.state == self.READY: 
-				#try:
+				try:
 					#print(self.rtpSocket)
 					data = self.rtpSocket.recv(25480)
 					#print("recebi alguma coisa!")
@@ -141,9 +141,12 @@ class Client:
 						elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
 							break
 					else:
-						print("Fui co crl")	
-			#	except:
-					
+						print("Não foram recebidos dados")	
+				except:
+					if self.requestSent != self.PAUSE:
+						print("Cá estamos")
+
+						self.get_info()	
 					# Upon receiving ACK for TEARDOWN request,
 					# close the RTP socket
 					# print("Vim cá ter lol")
@@ -159,43 +162,48 @@ class Client:
 					# 	pass
 				
 			else:
-
-				print("Consegui aqui chegar!")
-				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				s.connect((self.stream_locator, self.stream_loc_port))
-
-				print("Consegui ligar-me ao server para pedir info de stream")
-
-				dados = s.recv(1024).decode('utf-8')
-				
-				lista = dados.split("\n")
-				print(lista)
-				self.serverAddr, self.rtpPort = lista[0], int(lista[1])
-				print(f"O IP do server é o {self.serverAddr}")
-
-				#self.rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				
-				self.connectToServer()
-
-
-				self.state = self.INIT
-				self.sendRtspRequest(self.SETUP)
-
-				while self.state != self.READY:
-					print("ainda não está!")
-					time.sleep(0.2)
-
-				self.sendRtspRequest(self.PLAY)
-
-				while self.state != self.PLAYING:
-					print("ainda não está!")
-					time.sleep(0.2)
-
+				self.get_info()
+		
 				print("Optimo, cheguei aqui!")
-				# Stop listening upon requesting PAUSE or TEARDOWN
+			
+			# Stop listening upon requesting PAUSE or TEARDOWN
 			if self.playEvent.isSet(): 
 				break
-					
+
+	def get_info(self):
+		print("Consegui aqui chegar!")
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((self.stream_locator, self.stream_loc_port))
+
+		print("Consegui ligar-me ao server para pedir info de stream")
+
+		s.send(self.fileName.encode('utf-8'))
+
+		dados = s.recv(1024).decode('utf-8')
+		
+		lista = dados.split("\n")
+		print(lista)
+		self.serverAddr, self.rtpPort = lista[0], int(lista[1])
+		print(f"O IP do server é o {self.serverAddr}")
+
+		#self.rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
+		self.connectToServer()
+
+		s.close()
+		self.state = self.INIT
+		self.sendRtspRequest(self.SETUP)
+
+		while self.state != self.READY:
+			print("ainda não está!")
+			time.sleep(0.2)
+
+		self.sendRtspRequest(self.PLAY)
+
+		while self.state != self.PLAYING:
+			print("ainda não está!")
+			time.sleep(0.2)
+
 	def writeFrame(self, data):
 		"""Write the received frame to a temp image file. Return the image file."""
 		cachename = CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT
@@ -357,8 +365,7 @@ class Client:
 		# Create a new datagram socket to receive RTP packets from the server
 		# self.rtpSocket = ...
 		self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		# Set the timeout value of the socket to 0.5sec
-		# ...
+		
 		try:
 			self.rtpSocket.settimeout(1.5)
 		except:

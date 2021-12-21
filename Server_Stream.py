@@ -29,8 +29,9 @@ class Server_Stream:
             #Cena que quero meter do outro lado
             data = stream.nextFrame()
             #print("será?")
-            frameNumber = stream.frameNbr()     
-            if frameNumber % 30 == 0:
+            frameNumber = stream.frameNbr()  
+            imprimir = frameNumber % 30 == 0   
+            if imprimir:
                 print(f"Ficheiro: {ficheiro} Frame Number: {frameNumber} Porta: {porta}")
             
             self.ligacoes[porta].lock.acquire() #novo
@@ -41,7 +42,8 @@ class Server_Stream:
                         address = elemento[0]['rtspSocket'][1][0]
                         #VOLTAR A METER
                         #port = int(elemento[0]['rtpPort'])
-                        print(f"Estou a enviar para o {address}:{porta}")
+                        if imprimir:
+                            print(f"Estou a enviar para o {address}:{porta}")
 
                         elemento[0]['rtpSocket'].sendto(self.makeRtp(data, frameNumber),(address,porta))
                     except:
