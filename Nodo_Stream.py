@@ -28,7 +28,7 @@ class Nodo_Stream:
 		self.ligacoes = ligacoes
 		self.streaming = False
 		self.behind = None
-		self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		
 		self.rtp_port = 36000
 		self.rtsp_port = 36001
 		self.rtspSeq = list()
@@ -38,14 +38,7 @@ class Nodo_Stream:
 		#self.connectToServer()
 		self.frameNbr = 0
 		self.state = dict()
-
-		self.rtpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		try:
-			self.rtpSocket.settimeout(0.5)
-		except:
-			pass
-
-		self.rtpSocket.bind(('', 36000))
+		
 
 	def run(self, porta):
 		threading.Thread(target=self.sendRtp, args=(porta,)).start()
@@ -53,6 +46,17 @@ class Nodo_Stream:
 		self.requestSent = -1
 		self.rtspSeq = 0
 		self.sessionId = 0
+		self.rtp_port = porta
+		self.rtsp_port = porta+1
+		
+		self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.rtpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		try:
+			self.rtpSocket.settimeout(0.5)
+		except:
+			pass
+
+		self.rtpSocket.bind(('', self.rtp_port))
 
 
 	def sendRtp(self, porta):
@@ -108,7 +112,7 @@ class Nodo_Stream:
 
 						if quantos_streaming == 0:
 							self.rtspSeq+=1
-							request = 'PAUSE ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq[porta])
+							request = 'PAUSE ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq)
 							self.rtspSocket.send(request.encode())
 							#self.state = self.PAUSE
 
@@ -121,9 +125,9 @@ class Nodo_Stream:
 								time.sleep(0.4)
 							print("Já tenho pessoal de novo!")
 
-							self.rtspSeq[porta]+=1
+							self.rtspSeq+=1
 
-							request = 'PLAY ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq[porta])
+							request = 'PLAY ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.rtspSeq)
 
 							self.rtspSocket.send(request.encode())
 
@@ -162,7 +166,7 @@ class Nodo_Stream:
 				print(f"O meu behind é o {self.behind}")
 				try:
 					self.rtspSocket.connect((self.behind, self.rtsp_port))
-					print("Connected to " + self.behind)
+					print("Connected to " + self.behind + " " + str(self.rtsp_port))
 				except:
 					print("Não consegui ligar-me ao ")
 				
@@ -199,6 +203,7 @@ class Nodo_Stream:
 				# 	print("nope!")
 				# time.sleep(10)
 				print(self.state)
+
 				while self.state == self.INIT:
 					time.sleep(0.2)
 

@@ -122,7 +122,7 @@ class Client:
 			#print(f"O meu estado é {self.state}, ready é {self.READY} e playing é {self.PLAYING}")
 			"""or self.state == self.READY"""
 			if self.state == self.PLAYING or self.state == self.READY: 
-				try:
+				#try:
 					#print(self.rtpSocket)
 					data = self.rtpSocket.recv(25480)
 					#print("recebi alguma coisa!")
@@ -142,21 +142,21 @@ class Client:
 							break
 					else:
 						print("Fui co crl")	
-				except:
+			#	except:
 					
 					# Upon receiving ACK for TEARDOWN request,
 					# close the RTP socket
-					print("Vim cá ter lol")
-					try :
-						#if self.teardownAcked == 1:
-						#self.rtpSocket.shutdown(socket.SHUT_RDWR)
-						self.rtpSocket.close()
-						#	break
-						self.state = self.INIT #novo
+					# print("Vim cá ter lol")
+					# try :
+					# 	#if self.teardownAcked == 1:
+					# 	#self.rtpSocket.shutdown(socket.SHUT_RDWR)
+					# 	self.rtpSocket.close()
+					# 	#	break
+					# 	self.state = self.INIT #novo
 						
-						self.sendRtspRequest(self.TEARDOWN) #novo
-					except:
-						pass
+					# 	self.sendRtspRequest(self.TEARDOWN) #novo
+					# except:
+					# 	pass
 				
 			else:
 
@@ -360,7 +360,7 @@ class Client:
 		# Set the timeout value of the socket to 0.5sec
 		# ...
 		try:
-			self.rtpSocket.settimeout(0.5)
+			self.rtpSocket.settimeout(1.5)
 		except:
 			pass
 		try:
