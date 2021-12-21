@@ -23,7 +23,7 @@ class Client:
 	REPEAT = True
 	
 	# Initiation..
-	def __init__(self, master, serveraddr, rtpport, filename, stream_locator, stream_loc_port):
+	def __init__(self, master, serveraddr, rtpport, filename, stream_locator, stream_loc_port, portas):
 		self.master = master
 		self.master.protocol("WM_DELETE_WINDOW", self.handler)
 		self.createWidgets()
@@ -39,7 +39,9 @@ class Client:
 		self.frameNbr = 0
 		self.stream_locator = stream_locator
 		self.stream_loc_port = int(stream_loc_port)
-		
+		self.portas_stream = portas
+		self.numStream = 1
+
 	def createWidgets(self):
 		"""Build GUI."""
 		# Create Setup button
@@ -80,13 +82,46 @@ class Client:
 		# Switch Stream Button
 		self.repeat = Button(self.master, width=13, padx=20, pady=3)
 		self.repeat["text"] = "Change Stream"
-		self.repeat["command"] =  self.repeatAction
+		self.repeat["command"] =  self.switchStream
 		self.repeat.grid(row=2, column=2, columnspan=2, padx=2, pady=0)
 
 		# Create a label to display the movie
 		self.label = Label(self.master, height=19)
 		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
 	
+	def switchStream(self):
+		self.sendRtspRequest(self.PAUSE)
+		self.serverPort = self.portas_stream[self.numStream] + 1
+		self.rtpPort = self.portas_stream[self.numStream]
+
+		if self.numStream < len(self.portas_stream) - 1:
+			self.numStream += 1
+		else:
+			self.numStream = 0
+
+		
+		self.connectToServer()
+
+		self.state = self.INIT
+
+		self.openRtpPort()
+		
+		"""
+		self.sendRtspRequest(self.SETUP)
+
+		while self.state != self.READY:
+			print("ainda não está!")
+			time.sleep(0.2)
+		
+		self.sendRtspRequest(self.PLAY)
+
+		
+		while self.state != self.PLAYING:
+			print("ainda não está!")
+			time.sleep(0.2)
+		"""
+		
+		
 	def repeatAction(self):
 		if self.REPEAT:
 			self.REPEAT = False
@@ -315,8 +350,10 @@ class Client:
 			
 			# Close the RTSP socket upon requesting Teardown
 			if self.requestSent == self.TEARDOWN:
-				self.rtspSocket.shutdown(socket.SHUT_RDWR)
-				print("Fechei cenas")
+				try:
+					self.rtspSocket.shutdown(socket.SHUT_RDWR)
+				except OSError:
+					pass
 				self.rtspSocket.close()
 				break
 	
@@ -375,7 +412,7 @@ class Client:
 		self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		
 		try:
-			self.rtpSocket.settimeout(1.5)
+			self.rtpSocket.settimeout(2)
 		except:
 			pass
 		try:

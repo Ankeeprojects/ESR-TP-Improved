@@ -45,7 +45,7 @@ class ServerWorker:
 					self.processRtspRequest(data.decode("utf-8"))
 				else:
 					connSocket.close()
-					print("Estourou")
+					#print("Estourou")
 					sys.exit(0)
 					#break
 		except ConnectionResetError:

@@ -70,10 +70,7 @@ class Servidor:
             if mensagem[0] != '0':
                 nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
                 port = str(self.ficheiros[mensagem])
-
-                lista = [y for x,y in self.ficheiros.items()]
-
-                lista.remove(int(port))
+                lista = [porta for ficheiro,porta in self.ficheiros.items()]
 
                 #print(lista)
                 resposta = str(nodo_stream) + "\n" + port

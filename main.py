@@ -55,18 +55,18 @@ def main():
         dados = s.recv(1024).decode('utf-8')
 
         lista = dados.split("\n")
-        print(lista)
+        
         ip, rtpPort = lista[0], lista[1]
         print(f"O IP do server é o {ip} e a porta é {rtpPort}")
         
-        portas = lista[2:]
+        portas = [int(x) for x in lista[2:]]
 
         print(portas)
 
         root = Tk()
         try:
             # Create a new client
-            app = Client(root, ip, rtpPort, fileName, serverAddr, serverPort)
+            app = Client(root, ip, rtpPort, fileName, serverAddr, serverPort, portas)
             app.master.title("RTPClient")	
             root.mainloop()
             root.update()
