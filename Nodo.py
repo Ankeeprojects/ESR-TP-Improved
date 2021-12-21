@@ -242,30 +242,30 @@ class Nodo:
 
     def signal_handler(self, signal, frame):
         #print(f'You pressed Ctrl+C! E o meu estado é {self.stream.state}')
-        try:
+       # try:
             
-            print(f"As cenas do gajo são : {self.stream.ligacoes.items()}")
+           # print(f"As cenas do gajo são : {self.stream.ligacoes.items()}")
 
-            for ligacao in self.ligacoes:
+            """  for port,ligacao in self.ligacoes.items():
                 for user in ligacao.connections.values():
                     if user[0].get('rtspSocket'):
                         user[0]['rtspSocket'].close()
                         print("Matei este gajo!")
                     else:
                         print("Não tinha!")
-            
+            """
             for porta in self.portas:
-                if self.stream[porta].state == self.stream[porta].PLAYING or self.stream[porta].state == self.stream[porta].READY:
+                #if self.stream[porta].state == self.stream[porta].PLAYING or self.stream[porta].state == self.stream[porta].READY:
                     print("Estava a transmitir mas morri") 
                     request = 'TEARDOWN ' + 'movie.Mjpeg' + '\nCseq: ' + str(self.stream[porta].rtspSeq)
-                    self.stream.rtspSocket.send(request.encode())        
+                    self.stream[porta].rtspSocket.send(request.encode())        
             #self.stream.rtspSocket.close()
             for porta in self.portas:
                 self.stream[porta].rtspSocket.close()
             print("Cheguei aqui bla")
             sys.exit(0)
-        except:
-                sys.exit(0)
+       # except:
+       #         sys.exit(0)
 
 
     def evento(self):
