@@ -71,7 +71,16 @@ class Servidor:
                 nodo_stream = self.topologia.get_closest_overlay(str(info[0]))
                 port = str(self.ficheiros[mensagem])
 
+                lista = [y for x,y in self.ficheiros.items()]
+
+                lista.remove(int(port))
+
+                #print(lista)
                 resposta = str(nodo_stream) + "\n" + port
+
+                for elem in lista:
+                    resposta += "\n" + str(elem)
+
                 print(f"O nodo mais próximo é o {nodo_stream} e deve abrir a porta {port}")
             else:
                 resposta = ''

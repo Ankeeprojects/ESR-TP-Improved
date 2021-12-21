@@ -8,7 +8,7 @@ from Client import Client
 def main():
     num_args = len(sys.argv)
     print(num_args)
-    if num_args == 3:
+    if num_args > 2:
         
         ficheiros = dict()
         step = 0
@@ -37,11 +37,14 @@ def main():
         n = Nodo(portas)
         n.init(server_ip, 12000)
 
-    elif num_args == 4:
-        serverAddr = sys.argv[1]
-        serverPort = sys.argv[2]
+    elif num_args == 2:
+        #serverAddr = sys.argv[1]
+        serverPort = 36002
         #rtpPort = sys.argv[3]
-        fileName = sys.argv[3]
+        fileName = sys.argv[1]
+
+        with open("config","r") as file:
+            serverAddr = re.split(" ",file.readline()[:-1])[1]
 
         s = socket(AF_INET, SOCK_STREAM)
         s.connect((serverAddr, int(serverPort)))
@@ -55,6 +58,10 @@ def main():
         print(lista)
         ip, rtpPort = lista[0], lista[1]
         print(f"O IP do server é o {ip} e a porta é {rtpPort}")
+        
+        portas = lista[2:]
+
+        print(portas)
 
         root = Tk()
         try:

@@ -66,15 +66,23 @@ class Client:
 		self.teardown["command"] =  self.exitClient
 		self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
+		# Create Repeat Button
 		self.repeat = Button(self.master, width=10, padx=3, pady=3)
 		self.repeat["text"] = "Repeat"
 		self.repeat["command"] =  self.repeatAction
 		self.repeat.grid(row=2, column=1, padx=2, pady=2)
 
+		# Repeat Label
 		self.repeatLabel = Label(self.master, width=10, padx=20, pady=20)
 		self.repeatLabel['text'] = "Repeat: Activated"
 		self.repeatLabel.grid(row=2,column=0,padx=2,pady=2)
 		
+		# Switch Stream Button
+		self.repeat = Button(self.master, width=13, padx=20, pady=3)
+		self.repeat["text"] = "Change Stream"
+		self.repeat["command"] =  self.repeatAction
+		self.repeat.grid(row=2, column=2, columnspan=2, padx=2, pady=0)
+
 		# Create a label to display the movie
 		self.label = Label(self.master, height=19)
 		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
