@@ -3,7 +3,10 @@ import os
 from Nodo import *
 from Servidor import *
 from tkinter import TclError, Tk
-from Client import Client
+#from Client import Client
+
+#12000 --> Servidor para obter ID etc
+#42000 --> Hellos
 
 def main():
     num_args = len(sys.argv)
@@ -21,22 +24,18 @@ def main():
         s.init_server()
 
     elif num_args < 2:
+        nodo = Nodo()
+        nodo.init()
+       
 
-        with open("config","r") as file:
-            server_ip = re.split(" ",file.readline()[:-1])[1]
-        
-        s = socket(AF_INET, SOCK_STREAM)
-        s.connect((server_ip, 36002))
-
-        s.send('0'.encode('utf-8'))
-
+    """
         mensagem = s.recv(256).decode('utf-8').split("\n")
 
         portas = [int(x) for x in mensagem[:-1]]
         print(portas)
-        n = Nodo(portas)
-        n.init(server_ip, 12000)
-
+        n = Nodo()
+        n.init(, 12000)
+  
     elif num_args == 2:
         #serverAddr = sys.argv[1]
         serverPort = 36002
@@ -74,6 +73,7 @@ def main():
             os._exit(0)
     else:
         print("Número de argumentos inválido.")
+    """
 
 
 if __name__ == "__main__":

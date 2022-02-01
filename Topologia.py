@@ -16,6 +16,8 @@ class Topologia:
     overlay_data : dict # id do nodo overlay para tuplo com ip para voltar atrás e lista de tuplos com indicação do ip de ligação do nodo adjacente no overlay e id desse nodo
     node_interfaces : dict # id do nodo underlay para lista de ips das suas interfaces
 
+    caminhos : dict 
+
     # leitor do config
     def __init__(self):
         self.underlay_data = {} 
@@ -23,7 +25,10 @@ class Topologia:
         self.underlay_best_path = {}
         self.overlay_data = {}
         self.node_interfaces = {}
+        self.caminhos = {}
+        self.id_caminhos = {}
         clients = set()
+
         with open('config', 'r') as config:
             server_line = re.split(" ",config.readline()[:-1])
             self.starter_node = server_line[0]
@@ -48,14 +53,16 @@ class Topologia:
             self.calculate_fastest_path()
         for key,value in self.node_interfaces.items():
             self.node_interfaces[key]=list(value)
-        print("+----------------------------------------------------------+\n| Os nodos recomendados para fazerem parte do Overlay são: ")
-        recommended = set()
-        recommended.add(self.underlay_best_path[self.starter_node][1][0][2])
-        for client in clients:
-            recommended.add(self.underlay_best_path[client][0])
-        print("| " + str(recommended))
-        print('+----------------------------------------------------------+\n')
+       
         
+
+        self.caminhos['10'] = [[self.node_interfaces['16'][-1]],
+                                [self.node_interfaces['8'][-1], self.node_interfaces['7'][-1], self.node_interfaces['4'][-1],
+                                    self.node_interfaces['6'][-1], self.node_interfaces['12'][-1], self.node_interfaces['13'][-1]],
+                                [self.node_interfaces['9'][-1], self.node_interfaces['5'][-1], self.node_interfaces['4'][-1],
+                                    self.node_interfaces['11'][-1]]]
+
+        self.id_caminhos['10'] =  [['16'],['8','7','4','6','12', '13'],['9','5','4','11']]
 
     # Função que retorna o id do servidor
     def get_starter_node(self):
