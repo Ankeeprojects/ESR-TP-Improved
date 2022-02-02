@@ -62,7 +62,20 @@ class Topologia:
                                 [self.node_interfaces['9'][-1], self.node_interfaces['5'][-1], self.node_interfaces['4'][-1],
                                     self.node_interfaces['11'][-1]]]
 
-        self.id_caminhos['10'] =  [['16'],['8','7','4','6','12', '13'],['9','5','4','11']]
+        self.caminhos['9'] = [[self.node_interfaces['10'][-1], self.node_interfaces['16'][-1]],
+                                [self.node_interfaces['6'][-1], self.node_interfaces['8'][-1], self.node_interfaces['7'][-1], self.node_interfaces['4'][-1],
+                                    self.node_interfaces['12'][-1]],
+                                [self.node_interfaces['5'][-1], self.node_interfaces['4'][-1], self.node_interfaces['11'][-1], self.node_interfaces['13'][-1]]]
+
+        self.caminhos['6'] = [[self.node_interfaces['8'][-1], self.node_interfaces['10'][-1], self.node_interfaces['16'][-1]],
+                                [self.node_interfaces['9'][-1], self.node_interfaces['10'][-1], self.node_interfaces['16'][-1]], 
+                                [self.node_interfaces['5'][-1], self.node_interfaces['11'][-1], self.node_interfaces['4'][-1], self.node_interfaces['13'][-1]],
+                                [self.node_interfaces['7'][-1], self.node_interfaces['12'][-1], self.node_interfaces['4'][-1], self.node_interfaces['13'][-1]]]
+                                
+        self.id_caminhos['6'] = [['8','10','16'],['9','10','16'],['5','11','4','13'],['7','12','4','13']]
+        self.id_caminhos['10'] =  [['16'],['8','7','6','4','12','13'],['9','5','6','4','11']]
+        self.id_caminhos['9'] = [['10','16'],['6','8','7','4','12'],['5','4','11','13']]
+
 
     # Função que retorna o id do servidor
     def get_starter_node(self):
