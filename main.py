@@ -28,36 +28,24 @@ def main():
         nodo.init()
        
 
-    """
-        mensagem = s.recv(256).decode('utf-8').split("\n")
-
-        portas = [int(x) for x in mensagem[:-1]]
-        print(portas)
-        n = Nodo()
-        n.init(, 12000)
-  
     elif num_args == 2:
-        #serverAddr = sys.argv[1]
-        serverPort = 36002
-        #rtpPort = sys.argv[3]
+        serverPort = 42002
         fileName = sys.argv[1]
 
         with open("config","r") as file:
             serverAddr = re.split(" ",file.readline()[:-1])[1]
 
-        s = socket(AF_INET, SOCK_STREAM)
-        s.connect((serverAddr, int(serverPort)))
+        s = socket(AF_INET, SOCK_DGRAM)
 
-        print(f"liguei-me ao {serverAddr}:{serverPort}")
-        print("Consegui ligar-me ao server para pedir info de stream")
-        s.send(fileName.encode('utf-8'))
-        dados = s.recv(1024).decode('utf-8')
+        s.sendto(fileName.encode('utf-8'), (serverAddr, serverPort))
 
-        lista = dados.split("\n")
-        
-        ip, rtpPort = lista[0], lista[1]
+        dados, address = s.recvfrom(1024)
+
+        dados = json.loads(dados)
+
+        ip, rtpPort = dados[0], dados[1]
         print(f"O IP do server é o {ip} e a porta é {rtpPort}")
-        
+        """
         portas = [int(x) for x in lista[2:]]
 
         print(portas)
@@ -71,9 +59,10 @@ def main():
             root.update()
         except TclError:
             os._exit(0)
+        """
     else:
         print("Número de argumentos inválido.")
-    """
+
 
 
 if __name__ == "__main__":
