@@ -65,10 +65,13 @@ class Nodo:
         s = socket(AF_INET, SOCK_DGRAM)
         s.settimeout(0.1)
 
-        for ip in caminho:
+        for curr,ip in enumerate(caminho):
             s.sendto(self.id.encode('utf-8'), (ip, self.join_port))
             try:
                 message, address = s.recvfrom(1024)
+                message = message.decode()
+                
+                self.caminhos.current_indices[indice] = curr
                 self.adiciona_vizinho(message, address)
                 return
             except timeout:
@@ -89,12 +92,14 @@ class Nodo:
 
         while True:
             message, address = s.recvfrom(256)
+            message = message.decode()
+
             self.adiciona_vizinho(message, address)
             s.sendto(self.id.encode('utf-8'), address)
 
             print(f"O {message} está a juntar-se!")
 
-            self.verifica_melhor(message.decode())
+            self.verifica_melhor(message)
 
             
 
@@ -105,7 +110,7 @@ class Nodo:
                 indice_atual = self.caminhos.current_indices[indice]
 
                 if indice_atual == -1:
-                    print("O nodo era melhor!")
+                    print("Era o primeiro!")
                     self.lock.acquire()
                     self.caminhos.current_indices[indice] = indice_novo
                     self.lock.release()               
@@ -133,6 +138,7 @@ class Nodo:
             message, address = s.recvfrom(256)
 
             print(f"Recebi uma mensagem do {address}: {message}")
+            message = message.decode()
 
             self.lock.acquire()
             if message in self.vizinhos:
@@ -149,7 +155,7 @@ class Nodo:
                 print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
                     self.vizinhos.pop(vizinho)
-                    threading.Thread(target=self.procura_vizinho, args=(vizinho.decode(),)).start()
+                    threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
                     break
                 else:
                     print("passou!")
