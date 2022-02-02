@@ -26,6 +26,7 @@ class Nodo:
         self.server_port = 12000
         self.lock = threading.Lock()
         self.caminhos = Caminhos()
+        
 
     def init(self):
         threading.Thread(target=self.beacon_server).start()
@@ -50,6 +51,9 @@ class Nodo:
         
         print(self.caminhos.index_caminhos)
 
+        for _ in range(len(self.caminhos.lista_caminhos)):
+            self.caminhos.current_indices.append(-1)
+
         s.close()
 
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):
@@ -59,9 +63,9 @@ class Nodo:
 
     def encontra_vizinho(self, caminho : list, indice : int):
         s = socket(AF_INET, SOCK_DGRAM)
-        s.settimeout(0.2)
+        s.settimeout(0.1)
 
-        for index,ip in enumerate(caminho):
+        for ip in caminho:
             s.sendto(self.id.encode('utf-8'), (ip, self.join_port))
             try:
                 message, address = s.recvfrom(1024)
@@ -86,11 +90,40 @@ class Nodo:
         while True:
             message, address = s.recvfrom(256)
             self.adiciona_vizinho(message, address)
-            print(f"O {message} está a juntar-se!")
-
             s.sendto(self.id.encode('utf-8'), address)
 
-      
+            print(f"O {message} está a juntar-se!")
+
+            self.verifica_melhor(message.decode())
+
+            
+
+    def verifica_melhor(self, nodo):
+        for indice, caminho in enumerate(self.caminhos.index_caminhos):
+            try:
+                indice_novo = caminho.index(nodo)
+                indice_atual = self.caminhos.current_indices[indice]
+
+                if indice_atual == -1:
+                    print("O nodo era melhor!")
+                    self.lock.acquire()
+                    self.caminhos.current_indices[indice] = indice_novo
+                    self.lock.release()               
+                    print(f"Indice atual: {indice_atual}\nIndice novo:{indice_novo}\nnodo: {nodo}")
+                    break
+                elif indice_novo < indice_atual:
+                    print("O nodo era melhor!")
+                    self.lock.acquire()
+                    self.vizinhos.pop(caminho[indice_atual])
+                    self.caminhos.current_indices[indice] = indice_novo
+                    self.lock.release()               
+                    print(f"Indice atual: {indice_atual}\nIndice novo:{indice_novo}\nnodo: {nodo}")
+                    break
+
+            except ValueError:
+                print("Não estava!")
+                continue
+
     def beacon_server(self):
         s = socket(AF_INET, SOCK_DGRAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -125,12 +158,13 @@ class Nodo:
             time.sleep(0.2)
     
     def procura_vizinho(self, vizinho):
-        for caminho in self.caminhos.index_caminhos:
-            print(vizinho)
-            print(caminho)
-            if vizinho in caminho:
-                print("O gajo está aqui!")
-            else:
+        for ind_caminho, caminho in enumerate(self.caminhos.index_caminhos):
+            try:
+                indice = caminho.index(vizinho) + 1
+                self.encontra_vizinho(self.caminhos.lista_caminhos[ind_caminho][indice:], 0)
+                    
+
+            except ValueError:
                 print("Não está!")
 
     def beacon_sender(self):
