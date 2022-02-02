@@ -15,16 +15,20 @@ class Servidor:
     id : str
     join_port : int
     caminhos : Caminhos
+    beacon_port : int
+    stream_loc_port : int
 
     def __init__(self, ficheiros):
         self.id = '16'
         self.lock = threading.Lock()
         self.server_port = 12000
         self.beacon_port = 42000
+        self.join_port = 42001
+        self.stream_loc_port = 42002 
         self.ficheiros = ficheiros
         self.topologia = Topologia()
         self.vizinhos = dict()
-        self.join_port = 42001
+        
         self.caminhos = Caminhos()
 
     def init_server(self):
@@ -33,7 +37,33 @@ class Servidor:
         threading.Thread(target=self.beacon_sender).start()
         threading.Thread(target=self.activity_server).start()
         threading.Thread(target=self.join_server).start()
+        threading.Thread(target=self.stream_locator).start()
 
+    def stream_locator(self):
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        s.bind(('', self.stream_loc_port))
+
+        print(f"Localizador de streams a correr na porta {self.stream_loc_port}")
+
+        while True:
+            mensagem, address = s.recvfrom(256)
+            mensagem = mensagem.decode()
+
+            print(f"O gajo {address} está pedir {mensagem}")
+            
+            if mensagem in self.ficheiros:
+                port = str(self.ficheiros[mensagem])
+                lista = [porta for ficheiro,porta in self.ficheiros.items()]
+
+                #print(lista)
+                resposta = str(nodo_stream) + "\n" + port
+
+                
+            else:
+                print("Não tenho o ficheiro!")
+            
+           
     def server(self):
         s = socket(AF_INET, SOCK_DGRAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
