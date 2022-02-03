@@ -36,23 +36,25 @@ class Nodo:
 
         s = socket(AF_INET, SOCK_DGRAM)
         s.sendto('0'.encode('utf-8'), (self.server_ip, self.server_port)) 
-        message, address = s.recvfrom(256)
+        message = s.recv(256)
 
         self.id = str(json.loads(message))  
 
-        message, address = s.recvfrom(8192)
+        message = s.recv(8192)
 
         self.caminhos.lista_caminhos = json.loads(message)
 
         print(self.caminhos.lista_caminhos)
 
-        message, address = s.recvfrom(8192)
+        message = s.recv(8192)
         self.caminhos.index_caminhos = json.loads(message)
         
         print(self.caminhos.index_caminhos)
 
         for _ in range(len(self.caminhos.lista_caminhos)):
             self.caminhos.current_indices.append(-1)
+
+        #message, address = s.recvfrom(1024)
 
         s.close()
 
@@ -70,7 +72,7 @@ class Nodo:
             try:
                 message, address = s.recvfrom(1024)
                 message = message.decode()
-                
+
                 self.caminhos.current_indices[indice] = curr
                 self.adiciona_vizinho(message, address)
                 return
@@ -102,7 +104,6 @@ class Nodo:
             self.verifica_melhor(message)
 
             
-
     def verifica_melhor(self, nodo):
         for indice, caminho in enumerate(self.caminhos.index_caminhos):
             try:

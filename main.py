@@ -39,12 +39,11 @@ def main():
 
         s.sendto(fileName.encode('utf-8'), (serverAddr, serverPort))
 
-        dados, address = s.recvfrom(1024)
+        port, address = s.recvfrom(1024)
 
-        dados = json.loads(dados)
+        port = json.loads(port)
 
-        ip, rtpPort = dados[0], dados[1]
-        print(f"O IP do server é o {ip} e a porta é {rtpPort}")
+        print(f"A porta é {port}")
         """
         portas = [int(x) for x in lista[2:]]
 

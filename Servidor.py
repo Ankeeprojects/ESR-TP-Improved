@@ -54,12 +54,10 @@ class Servidor:
             
             if mensagem in self.ficheiros:
                 port = str(self.ficheiros[mensagem])
-                lista = [porta for ficheiro,porta in self.ficheiros.items()]
+                lista = [porta for porta in self.ficheiros.values()]
 
-                #print(lista)
-                resposta = str(nodo_stream) + "\n" + port
-
-                
+                print(lista)
+                s.sendto(port.encode('utf-8'), address)               
             else:
                 print("Não tenho o ficheiro!")
             
