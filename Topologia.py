@@ -92,7 +92,11 @@ class Topologia:
         self.caminhos['16'] =  [[self.node_interfaces['10'][-1], self.node_interfaces['9'][-1], self.node_interfaces['8'][-1],
                                 self.node_interfaces['6'][-1], self.node_interfaces['5'][-1], self.node_interfaces['7'][-1],
                                 self.node_interfaces['4'][-1], self.node_interfaces['11'][-1], self.node_interfaces['12'][-1], self.node_interfaces['13'][-1]]]
-                                
+        
+        self.caminhos['23'] = [self.node_interfaces['5'][-1], self.node_interfaces['11'][-1], self.node_interfaces['9'][-1], self.node_interfaces['4'][-1],
+                                self.node_interfaces['6'][-1], self.node_interfaces['13'][-1], self.node_interfaces['10'][-1]]
+
+        self.id_caminhos['23'] = ['5', '11', '9', '4', '6', '13', '10'] 
         self.id_caminhos['16'] = [['10', '9', '8', '6', '5','7','4','11','12','13']]                       
         self.id_caminhos['4'] = [['5','9','6','10','16'],['7','8','6','10','16'],['11'],['13','12']]                       
         self.id_caminhos['7'] = [['8','6','10','9','16'],['6','9','10','16'],['4','5','11'],['12','13']]                      

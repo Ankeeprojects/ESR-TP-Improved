@@ -39,16 +39,13 @@ def main():
 
         s.sendto(fileName.encode('utf-8'), (serverAddr, serverPort))
 
-        port, address = s.recvfrom(1024)
+        info, address = s.recvfrom(1024)
 
-        port = json.loads(port)
+        info = json.loads(info)
 
-        print(f"A porta é {port}")
+        
+        #s.sendto("")
         """
-        portas = [int(x) for x in lista[2:]]
-
-        print(portas)
-
         root = Tk()
         try:
             # Create a new client

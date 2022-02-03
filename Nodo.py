@@ -54,8 +54,11 @@ class Nodo:
         for _ in range(len(self.caminhos.lista_caminhos)):
             self.caminhos.current_indices.append(-1)
 
-        #message, address = s.recvfrom(1024)
+        message = s.recv(1024)  
+        
+        portas = json.loads(message)
 
+        
         s.close()
 
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):

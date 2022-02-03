@@ -39,6 +39,38 @@ class Servidor:
         threading.Thread(target=self.join_server).start()
         threading.Thread(target=self.stream_locator).start()
 
+        for ficheiro, porta in self.ficheiros.items():
+            print(f"Servidor com o ficheiro {ficheiro} e a porta {porta}")
+            threading.Thread(target=self.streaming_server, args=(ficheiro,porta)).start()
+
+    def streaming_server(self, ficheiro, porta):
+        
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        s.bind(('', porta+1))
+        
+        print(f"Streaming server a correr na porta {porta+1}")
+
+        #Server_Stream.Server_Stream(self.ligacoes).run(ficheiro, porta)
+
+        while True:
+            message, address = s.recvfrom(1024)
+
+            message = message.decode()
+
+            print(message)
+            
+            #client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
+            #print(f"O cliente é o {client_id} e recebi isto na porta {porta+1}")
+            #print(str(clientInfo['rtspSocket']))
+            
+            
+            #for ficheiro, porta in self.ficheiros.items():
+            #self.ligacoes[porta].connections[client_id] = [clientInfo, "INIT"]
+            
+            #ServerWorker(self.ligacoes, self.ficheiros, client_id, porta).run()
+            #server.recvRtspRequest()
+
     def stream_locator(self):
         s = socket(AF_INET, SOCK_DGRAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -51,13 +83,18 @@ class Servidor:
             mensagem = mensagem.decode()
 
             print(f"O gajo {address} está pedir {mensagem}")
-            
+
+            client_id = self.topologia.get_node_info(address[0])
+
+
             if mensagem in self.ficheiros:
                 port = str(self.ficheiros[mensagem])
-                lista = [porta for porta in self.ficheiros.values()]
+                #lista = [porta for porta in self.ficheiros.values()]               
+                caminhos = self.topologia.caminhos[client_id]
 
-                print(lista)
-                s.sendto(port.encode('utf-8'), address)               
+                indices = self.topologia.id_caminhos[client_id]
+                resp = [client_id, port, caminhos, indices]
+                s.sendto(json.dumps(resp).encode('utf-8'), address)               
             else:
                 print("Não tenho o ficheiro!")
             
@@ -94,6 +131,10 @@ class Servidor:
         resp = json.dumps(indices)
 
         s.sendto(str.encode(resp), address)
+
+        portas = [porta for porta in self.ficheiros.values()]
+
+        s.sendto(json.dumps(portas).encode('utf-8'), address)
         s.close()
 
     def encontra_vizinho(self, caminho : list, indice : int):
