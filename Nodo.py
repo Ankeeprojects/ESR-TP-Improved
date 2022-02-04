@@ -26,7 +26,7 @@ class Nodo:
         self.join_port = 42001
         self.server_ip = '10.0.3.10'
         self.server_port = 12000
-        self.caminhos = Caminhos()
+        self.caminhos = Caminhos(True)
         self.streams = []
 
     def init(self):
@@ -67,6 +67,8 @@ class Nodo:
         
         s.close()
 
+        self.caminhos.add_portas(portas)
+        
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):
             threading.Thread(target=self.encontra_vizinho, args=(caminho, indice)).start()
     
@@ -161,7 +163,7 @@ class Nodo:
             self.caminhos.lock.acquire()
             if message in self.caminhos.vizinhos:
                 self.caminhos.vizinhos[message][1] = datetime.now()
-                print("Já está!") 
+                #print("Já está!") 
             self.caminhos.lock.release()
 
     def activity_server(self):
@@ -170,14 +172,14 @@ class Nodo:
 
             for vizinho, info in self.caminhos.vizinhos.items():
                 diferenca = datetime.now() - info[1]
-                print(diferenca.total_seconds())
+                #print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
                     self.caminhos.vizinhos.pop(vizinho)
                     threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
                     break
-                else:
-                    print("passou!")
-
+                #else:
+                    #print("passou!")
+                    
             self.caminhos.lock.release()
             threading.Event().wait(0.2)
     

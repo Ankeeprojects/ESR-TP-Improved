@@ -61,7 +61,7 @@ class Client:
 	def pede_stream(self):
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		s.settimeout(0.4)
+		s.settimeout(1)
 
 		success = False
 		indice = 0
@@ -70,7 +70,10 @@ class Client:
 			
 			try:
 				message, address = s.recvfrom(256)
+				message = message.decode().split(" ")
 				print(f"O GAJO RESPONDEU! {address}")
+				s.sendto(f'3 {self.id}'.encode('utf-8'), (address[0], self.serverPort))
+
 				success = True
 			except socket.timeout:
 				print("Didn't work!")
@@ -246,7 +249,7 @@ class Client:
 	
 	def playMovie(self):
 		"""Play button handler."""
-		print("welp")
+
 		#if self.state == self.READY:
 			# Create a new thread to listen for RTP packets
 		threading.Thread(target=self.listenRtp).start()

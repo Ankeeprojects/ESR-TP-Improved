@@ -26,6 +26,8 @@ class Node_Info:
 
         self.stream_socket = socket(AF_INET, SOCK_DGRAM)
         self.stream_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.stream_socket.bind(('', porta))
+
         self.identifiers = identifiers
 
         self.attempting = False
@@ -37,7 +39,7 @@ class Node_Info:
     def init(self):
         print(f"Streaming server a correr na porta {self.porta+1}")
 
-        #TODO threading.Thread(target=self.stream).start()
+        threading.Thread(target=self.stream).start()
 
         while True:
             message, address = self.s.recvfrom(1024)
@@ -49,9 +51,6 @@ class Node_Info:
             if message[0] == '0':
                 print("Este gajo quer stream")
                 if not self.attempting:
-                    self.lock.acquire()
-                    self.streaming_nodes[message[1]] = self.identifiers[message[1]]
-                    self.lock.release()
                     self.attempting = True
                     
                     self.caminhos.flood(self.id, self.porta, message[1], address)
@@ -70,6 +69,16 @@ class Node_Info:
                 #message, address = self.s.recvfrom(1024)
                 #else:
                 #    pass
+            elif message[0] == '3':
+                print(f"Recebi confirmação do stream para o {message[1]} {address}")
+
+                print(f"Estou a enviar para o {self.identifiers[self.caminhos.streamer[self.porta]]}")
+                self.s.sendto(f'3 {self.id}'.encode('utf-8'), (self.identifiers[self.caminhos.streamer[self.porta]], self.porta+1))
+                self.lock.acquire()
+                self.streaming_nodes[message[1]] = self.identifiers[message[1]]
+                self.lock.release()
+
+
             #client_id = self.topologia.get_node_info(str(clientInfo['rtspSocket'][1][0]))
             #print(f"O cliente é o {client_id} e recebi isto na porta {porta+1}")
             #print(str(clientInfo['rtspSocket']))
@@ -82,23 +91,16 @@ class Node_Info:
             #server.recvRtspRequest()
 
     def stream (self):
-        stream = VideoStream(self.ficheiro)
         while True:
             
-            threading.Event().wait(0.03)
-            #time.sleep(0.03)
+            #threading.Event().wait(0.03)
 
-            data = stream.nextFrame()
+            data = self.stream_socket.recv(25000)
 
-            frameNumber = stream.frameNbr()  
             self.lock.acquire()
-            imprimir = frameNumber % 30 == 0   
-            if imprimir:
-                print(f"Ficheiro: {self.ficheiro} Frame Number: {frameNumber} Porta: {self.porta}")
-            #print(self.streaming_nodes)
             for nodo in self.streaming_nodes.values():
                 print(f"Estou a enviar para {nodo} {self.porta}")
-                self.stream_socket.sendto(self.make_RTP(data, frameNumber), (nodo, self.porta))
+                self.stream_socket.sendto(data, (nodo, self.porta))
 
             self.lock.release()
 

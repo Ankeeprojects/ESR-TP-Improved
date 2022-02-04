@@ -7,15 +7,24 @@ class Caminhos:
     current_indices: list
     vizinhos: dict
     lock : threading.Lock
+    streamer : dict
+    nodo : bool
 
-    def __init__(self) -> None:
+    def __init__(self, nodo) -> None:
         self.index_caminhos = []
         self.lista_caminhos = []
         self.current_indices = []
         self.vizinhos = dict()
         self.lock = threading.Lock()
+        self.nodo = nodo
+        self.streamer = dict()
 
-    def flood (self, id, porta, user, address):
+        
+    def add_portas(self, portas):
+        for porta in portas:
+            self.streamer[porta] = None
+
+    def flood (self, id, porta, user, address_user):
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -34,9 +43,12 @@ class Caminhos:
         self.lock.release()
 
         try:
-            message = s.recv(256)
+            message,address = s.recvfrom(256)
             print(f"O GAJO RESPONDEU: {message}!")
-            s.sendto(f"1 {id}".encode('utf-8'), address)
+            
+            if self.nodo:
+                self.streamer[porta] = message.decode().split(" ")[1]
+            s.sendto(f"1 {id}".encode('utf-8'), address_user)
             success = True
         except socket.timeout:
             print("Didn't work!")

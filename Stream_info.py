@@ -44,16 +44,20 @@ class Stream_Info:
             if message[0] == '0':
                 print("Este gajo quer stream")
                 #if not self.attempting:
-                self.lock.acquire()
-                self.streaming_nodes[message[1]] = self.topologia.node_interfaces[message[1]][-1]
-                self.lock.release()
+                
                 self.attempting = True
-                self.s.sendto('1'.encode('utf-8'), address)
+                self.s.sendto('1 16'.encode('utf-8'), address)
             elif message[0] == '2':
                 print(f"A fechar o stream para o {message[1]}")
                 self.lock.acquire()
                 self.streaming_nodes.pop(message[1])
                 self.lock.release()
+            elif message[0] == '3':
+                print(f"Recebi confirmação do stream para o {message[1]} {address}")
+                self.lock.acquire()
+                self.streaming_nodes[message[1]] = self.topologia.node_interfaces[message[1]][-1]
+                self.lock.release()
+            
                 #message, address = self.s.recvfrom(1024)
                 #else:
                 #    pass

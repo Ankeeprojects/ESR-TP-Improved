@@ -31,7 +31,7 @@ class Servidor:
         self.topologia = Topologia()
         self.vizinhos = dict()
         self.streams = []
-        self.caminhos = Caminhos()
+        self.caminhos = Caminhos(False)
 
     def init_server(self):
         threading.Thread(target=self.server).start()
@@ -41,11 +41,14 @@ class Servidor:
         threading.Thread(target=self.join_server).start()
         threading.Thread(target=self.stream_locator).start()
 
+        portas = []
         for ficheiro, porta in self.ficheiros.items():
             print(f"Servidor com o ficheiro {ficheiro} e a porta {porta}")
-            
+            portas.append(porta)
             threading.Thread(target=self.streaming_server, args=(ficheiro,porta)).start()
 
+        self.caminhos.add_portas(portas)
+    
     def streaming_server(self, ficheiro, porta):
         streaming = Stream_Info(ficheiro, porta, self.topologia)
         self.streams.append(streaming)
@@ -200,7 +203,7 @@ class Servidor:
             self.lock.acquire()
             if message in self.vizinhos:
                 self.vizinhos[message][1] = datetime.now()
-                print("Já está!") 
+                #print("Já está!") 
             self.lock.release()
 
     def activity_server(self):
@@ -209,13 +212,13 @@ class Servidor:
 
             for vizinho, info in self.vizinhos.items():
                 diferenca = datetime.now() - info[1]
-                print(diferenca.total_seconds())
+                #print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
                     self.vizinhos.pop(vizinho)
                     threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
                     break
-                else:
-                    print("passou!")
+                #else:
+                    #print("passou!")
 
             self.lock.release()
             time.sleep(0.2)
