@@ -68,9 +68,9 @@ class Nodo:
         s.close()
 
         self.caminhos.add_portas(portas)
-        
+
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):
-            threading.Thread(target=self.encontra_vizinho, args=(caminho, indice)).start()
+            threading.Thread(target=self.encontra_vizinho, args=(caminho, indice, [])).start()
     
         for porta in portas:
             threading.Thread(target=self.stream_server, args=(porta,)).start()
@@ -82,11 +82,13 @@ class Nodo:
         streaming.init()
 
 
-    def encontra_vizinho(self, caminho : list, indice : int):
+    def encontra_vizinho(self, caminho : list, indice : int, busca_stream):
         s = socket(AF_INET, SOCK_DGRAM)
-        s.settimeout(0.1)
+        s.settimeout(0.2)
+        print(f"Vou buscar substituto para {busca_stream}")
 
         for curr,ip in enumerate(caminho):
+            print(f"Estou a tentar ligar-me ao {ip}")
             s.sendto(self.id.encode('utf-8'), (ip, self.join_port))
             try:
                 message, address = s.recvfrom(1024)
@@ -94,6 +96,11 @@ class Nodo:
 
                 self.caminhos.current_indices[indice] = curr
                 self.adiciona_vizinho(message, address)
+
+                for porta in busca_stream:
+                    s.sendto(f'3 {self.id}'.encode('utf-8'), (self.identifiers[message], porta+1))
+                    self.caminhos.streamer[porta] = message
+
                 return
             except timeout:
                 #print("Timeout!")
@@ -174,8 +181,19 @@ class Nodo:
                 diferenca = datetime.now() - info[1]
                 #print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
+
                     self.caminhos.vizinhos.pop(vizinho)
-                    threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
+
+                    print(self.caminhos.streamer)
+                    print(self.caminhos.streamer.values())
+                    busca_stream = []
+                    for key, value in self.caminhos.streamer.items():
+                        if value == vizinho:
+                            busca_stream.append(key)
+                            self.caminhos.streamer[key] = None
+                            print("O Gajo que me estava a dar stream morreu!!")
+
+                    threading.Thread(target=self.procura_vizinho, args=(vizinho,busca_stream)).start()
                     break
                 #else:
                     #print("passou!")
@@ -183,13 +201,12 @@ class Nodo:
             self.caminhos.lock.release()
             threading.Event().wait(0.2)
     
-    def procura_vizinho(self, vizinho):
+    def procura_vizinho(self, vizinho, busca_stream):
         for ind_caminho, caminho in enumerate(self.caminhos.index_caminhos):
             try:
                 indice = caminho.index(vizinho) + 1
-                self.encontra_vizinho(self.caminhos.lista_caminhos[ind_caminho][indice:], 0)
-                    
-
+                self.encontra_vizinho(self.caminhos.lista_caminhos[ind_caminho][indice:], ind_caminho, busca_stream)
+                
             except ValueError:
                 print("Não está!")
 

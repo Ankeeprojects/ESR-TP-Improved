@@ -76,7 +76,7 @@ class Topologia:
         self.caminhos['5'] = [[self.node_interfaces['9'][-1], self.node_interfaces['10'][-1],self.node_interfaces['16'][-1]],
                                 [self.node_interfaces['6'][-1], self.node_interfaces['9'][-1], self.node_interfaces['8'][-1]],
                                 [self.node_interfaces['4'][-1], self.node_interfaces['7'][-1], self.node_interfaces['12'][-1]],
-                                [self.node_interfaces['11'][-1], self.node_interfaces['13'][-1]], self.node_interfaces['4'][-1], self.node_interfaces['12'][-1]]                     
+                                [self.node_interfaces['11'][-1], self.node_interfaces['13'][-1], self.node_interfaces['4'][-1], self.node_interfaces['12'][-1]]]                    
         
         self.caminhos['7'] =  [[self.node_interfaces['8'][-1], self.node_interfaces['6'][-1], self.node_interfaces['10'][-1], self.node_interfaces['9'][-1], self.node_interfaces['16'][-1]],
                                 [self.node_interfaces['6'][-1], self.node_interfaces['9'][-1], self.node_interfaces['10'][-1], self.node_interfaces['16'][-1]],
