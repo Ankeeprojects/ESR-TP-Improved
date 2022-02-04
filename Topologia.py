@@ -15,7 +15,7 @@ class Topologia:
     active_nodes : set # set de ids dos nodos ativos no overlay
     overlay_data : dict # id do nodo overlay para tuplo com ip para voltar atrás e lista de tuplos com indicação do ip de ligação do nodo adjacente no overlay e id desse nodo
     node_interfaces : dict # id do nodo underlay para lista de ips das suas interfaces
-
+    identifiers : dict
     caminhos : dict 
 
     # leitor do config
@@ -27,6 +27,7 @@ class Topologia:
         self.node_interfaces = {}
         self.caminhos = {}
         self.id_caminhos = {}
+        self.identifiers = {}
         clients = set()
 
         with open('config', 'r') as config:
@@ -55,7 +56,7 @@ class Topologia:
             self.node_interfaces[key]=list(value)
        
         
-
+        
         self.caminhos['10'] = [[self.node_interfaces['16'][-1]],
                                 [self.node_interfaces['8'][-1], self.node_interfaces['7'][-1], self.node_interfaces['4'][-1],
                                     self.node_interfaces['6'][-1], self.node_interfaces['12'][-1], self.node_interfaces['13'][-1]],
@@ -94,9 +95,9 @@ class Topologia:
                                 self.node_interfaces['4'][-1], self.node_interfaces['11'][-1], self.node_interfaces['12'][-1], self.node_interfaces['13'][-1]]]
         
         self.caminhos['23'] = [self.node_interfaces['5'][-1], self.node_interfaces['11'][-1], self.node_interfaces['9'][-1], self.node_interfaces['4'][-1],
-                                self.node_interfaces['6'][-1], self.node_interfaces['13'][-1], self.node_interfaces['10'][-1]]
+                                self.node_interfaces['6'][-1], self.node_interfaces['13'][-1], self.node_interfaces['10'][-1], self.node_interfaces['16'][-1]]
 
-        self.id_caminhos['23'] = ['5', '11', '9', '4', '6', '13', '10'] 
+        self.id_caminhos['23'] = ['5', '11', '9', '4', '6', '13', '10', '16'] 
         self.id_caminhos['16'] = [['10', '9', '8', '6', '5','7','4','11','12','13']]                       
         self.id_caminhos['4'] = [['5','9','6','10','16'],['7','8','6','10','16'],['11'],['13','12']]                       
         self.id_caminhos['7'] = [['8','6','10','9','16'],['6','9','10','16'],['4','5','11'],['12','13']]                      
@@ -105,7 +106,11 @@ class Topologia:
         self.id_caminhos['10'] =  [['16'],['8','7','6','4','12','13'],['9','5','6','4','11']]
         self.id_caminhos['9'] = [['10','16'],['6','8','7','4','12'],['5','4','11','13']]
 
+        for i in ['16', '10','9','8','6','5','7','4','11','13','12','17','18','19','20','21','22','23','24']:
+            self.identifiers[str(i)] = self.node_interfaces[str(i)][-1]
 
+        print(f"identifiers: {self.identifiers}")
+        
     # Função que retorna o id do servidor
     def get_starter_node(self):
         return self.starter_node

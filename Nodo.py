@@ -6,6 +6,7 @@ import threading
 import time
 from datetime import datetime
 from Caminhos import *
+from Node_info import *
 import re
 
 
@@ -17,6 +18,8 @@ class Nodo:
     lock : threading.Lock
     caminhos : Caminhos
     id : str
+    identifiers : dict
+    streams : list
 
     def __init__(self) -> None:
         self.vizinhos = dict()
@@ -26,13 +29,14 @@ class Nodo:
         self.server_port = 12000
         self.lock = threading.Lock()
         self.caminhos = Caminhos()
-        
+        self.streams = []
 
     def init(self):
         threading.Thread(target=self.beacon_server).start()
         threading.Thread(target=self.beacon_sender).start()
         threading.Thread(target=self.join_server).start()
         threading.Thread(target=self.activity_server).start()
+        
 
         s = socket(AF_INET, SOCK_DGRAM)
         s.sendto('0'.encode('utf-8'), (self.server_ip, self.server_port)) 
@@ -58,13 +62,25 @@ class Nodo:
         
         portas = json.loads(message)
 
+        message = s.recv(4096)
+
+        self.identifiers = json.loads(message)
+
         
         s.close()
 
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):
             threading.Thread(target=self.encontra_vizinho, args=(caminho, indice)).start()
     
-    
+        for porta in portas:
+            threading.Thread(target=self.stream_server, args=(porta,)).start()
+
+           
+    def stream_server(self, porta:int):
+        streaming = Node_Info(porta, self.identifiers)
+        self.streams.append(streaming)
+        streaming.init()
+
 
     def encontra_vizinho(self, caminho : list, indice : int):
         s = socket(AF_INET, SOCK_DGRAM)
@@ -165,7 +181,7 @@ class Nodo:
                     print("passou!")
 
             self.lock.release()
-            time.sleep(0.2)
+            threading.Event().wait(0.2)
     
     def procura_vizinho(self, vizinho):
         for ind_caminho, caminho in enumerate(self.caminhos.index_caminhos):
@@ -184,4 +200,4 @@ class Nodo:
             for vizinho in self.vizinhos.values():
                 s.sendto(self.id.encode('utf-8'), (vizinho[0], self.beacon_port))
                 
-            time.sleep(0.2) 
+            threading.Event().wait(0.2)

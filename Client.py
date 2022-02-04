@@ -2,7 +2,7 @@ from tkinter import *
 import tkinter.messagebox as messagebox
 from PIL import Image, ImageTk, ImageFile
 import socket, threading, sys, traceback, os, time
-
+import datetime
 from RtpPacket import RtpPacket
 
 CACHE_FILE_NAME = "cache-"
@@ -22,25 +22,116 @@ class Client:
 
 	REPEAT = True
 	
+	vizinhos : dict
+	lock : threading.Lock
+	beacon_port: int
+	join_port: int
+	sessionId : int
+
 	# Initiation..
-	def __init__(self, master, serveraddr, rtpport, filename, stream_locator, stream_loc_port, portas):
+	def __init__(self, master, info):
 		self.master = master
 		self.master.protocol("WM_DELETE_WINDOW", self.handler)
 		self.createWidgets()
-		self.serverAddr = serveraddr
-		self.serverPort = int(rtpport) + 1
-		self.rtpPort = int(rtpport)
-		self.fileName = filename
-		self.rtspSeq = 0
-		self.sessionId = 0
-		self.requestSent = -1
-		self.teardownAcked = 0
-		self.connectToServer()
+		self.server_ip_pool = info[2]
+		self.server_id_pool = info[3]
+		self.serverPort = int(info[1]) + 1
+		self.rtpPort = int(info[1])
+		self.id = info[0]
+
+		self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.rtpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.rtpSocket.bind(('', self.rtpPort))
+
+		#self.rtpSocket.settimeout(1)
+		
 		self.frameNbr = 0
-		self.stream_locator = stream_locator
-		self.stream_loc_port = int(stream_loc_port)
-		self.portas_stream = portas
 		self.numStream = 1
+		self.sessionId = 30
+		self.vizinhos = dict()
+		self.lock = threading.Lock()
+		self.beacon_port = 42000
+		self.join_port = 42001
+
+		print(self.rtpPort)
+		threading.Thread(target=self.join_server).start()
+		threading.Thread(target=self.activity_server).start()
+		self.pede_stream()
+
+	def pede_stream(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.settimeout(0.4)
+
+		success = False
+		indice = 0
+		while not success:
+			s.sendto(f"0 {self.id}".encode('utf-8'), (self.server_ip_pool[0], self.serverPort))
+			
+			try:
+				message = s.recv(256)
+				print("O GAJO RESPONDEU!")
+				success = True
+			except socket.timeout:
+				print("Didn't work!")
+				self.server_ip_pool.pop(0)
+		
+	def adiciona_vizinho(self, message, address):
+		print("Adicionando")
+		self.lock.acquire()
+		self.vizinhos[message] = [address[0], datetime.now()]
+		print(self.vizinhos)
+		self.lock.release()
+
+	def join_server(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.bind(('', self.join_port))
+
+		while True:
+			message, address = s.recvfrom(256)
+			message = message.decode()
+
+			self.adiciona_vizinho(message, address)
+			s.sendto(self.id.encode('utf-8'), address)
+
+			print(f"O {message} está a juntar-se!")
+
+			#self.verifica_melhor(message)
+
+	def beacon_server(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.bind(('', self.beacon_port))
+
+		while True:
+			message, address = s.recvfrom(256)
+
+			print(f"Recebi uma mensagem do {address}: {message}")
+			message = message.decode()
+
+			self.lock.acquire()
+			if message in self.vizinhos:
+				self.vizinhos[message][1] = datetime.now()
+				print("Já está!") 
+			self.lock.release()
+
+	def activity_server(self):
+		while True:
+			self.lock.acquire()
+
+			for vizinho, info in self.vizinhos.items():
+				diferenca = datetime.now() - info[1]
+				print(diferenca.total_seconds())
+				if diferenca.total_seconds() > 0.25:
+					self.vizinhos.pop(vizinho)
+					threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
+					break
+				else:
+					print("passou!")
+
+			self.lock.release()
+			time.sleep(0.2)
 
 	def createWidgets(self):
 		"""Build GUI."""
@@ -137,7 +228,11 @@ class Client:
 	
 	def exitClient(self):
 		"""Teardown button handler."""
-		self.sendRtspRequest(self.TEARDOWN)	
+		#self.sendRtspRequest(self.TEARDOWN)
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+		s.sendto('2 23'.encode('utf-8'), (self.server_ip_pool[0], self.serverPort))
 		self.master.destroy() # Close the gui window
 		try:
 			os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT) # Delete the cache image from video
@@ -151,45 +246,47 @@ class Client:
 	
 	def playMovie(self):
 		"""Play button handler."""
-		if self.state == self.READY:
+		print("welp")
+		#if self.state == self.READY:
 			# Create a new thread to listen for RTP packets
-			threading.Thread(target=self.listenRtp).start()
-			self.playEvent = threading.Event()
-			self.playEvent.clear()
-			self.sendRtspRequest(self.PLAY)
+		threading.Thread(target=self.listenRtp).start()
+		self.playEvent = threading.Event()
+		self.playEvent.clear()
+		#self.sendRtspRequest(self.PLAY)
 	
 	def listenRtp(self):		
 		"""Listen for RTP packets."""
 		while True:
-			server = self.serverAddr
+			#server = self.serverAddr
 			#print(f"O meu estado é {self.state}, ready é {self.READY} e playing é {self.PLAYING}")
 			"""or self.state == self.READY"""
-			if self.state == self.PLAYING or self.state == self.READY: 
-				try:
-					#print(self.rtpSocket)
-					data = self.rtpSocket.recv(25480)
-					#print("recebi alguma coisa!")
-					if data:
-						rtpPacket = RtpPacket()
-						rtpPacket.decode(data)
-						
-						currFrameNbr = rtpPacket.seqNum()
-						if currFrameNbr % 30 == 0:
-							print("Current Seq Num: " + str(currFrameNbr))
-											
-						if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
-							self.frameNbr = currFrameNbr
-							#print("Payload length: " + str(len(rtpPacket.getPayload())))
-							self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-						elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
-							break
-					else:
-						print("Não foram recebidos dados")	
-				except:
-					if self.requestSent != self.PAUSE:
-						print("Cá estamos")
+			#if self.state == self.PLAYING or self.state == self.READY: 
+			try:
+				#print(self.rtpSocket)
+				data = self.rtpSocket.recv(25480)
+				#print("recebi alguma coisa!")
+				if data:
+					rtpPacket = RtpPacket()
+					rtpPacket.decode(data)
+					
+					currFrameNbr = rtpPacket.seqNum()
+					if currFrameNbr % 30 == 0:
+						print("Current Seq Num: " + str(currFrameNbr))
 
-						self.get_info()	
+					self.frameNbr = currFrameNbr				
+					#if currFrameNbr > self.frameNbr or (self.REPEAT and (self.frameNbr - currFrameNbr) > 50): # Discard the late packet if didnt start again
+						#self.frameNbr = currFrameNbr
+						#print("Payload length: " + str(len(rtpPacket.getPayload())))
+					self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
+					#elif not self.REPEAT and (self.frameNbr - currFrameNbr) > 50:
+					#	break
+				else:
+					print("Não foram recebidos dados")	
+			except:
+				if self.requestSent != self.PAUSE:
+					print("Cá estamos")
+
+					self.get_info()	
 					# Upon receiving ACK for TEARDOWN request,
 					# close the RTP socket
 					# print("Vim cá ter lol")
@@ -204,14 +301,14 @@ class Client:
 					# except:
 					# 	pass
 				
-			else:
-				self.get_info()
+			#else:
+			#	self.get_info()
 		
-				print("Optimo, cheguei aqui!")
+			#	print("Optimo, cheguei aqui!")
 			
 			# Stop listening upon requesting PAUSE or TEARDOWN
-			if self.playEvent.isSet(): 
-				break
+			#if self.playEvent.isSet(): 
+			#	break
 
 	def get_info(self):
 		print("Consegui aqui chegar!")

@@ -3,7 +3,7 @@ import os
 from Nodo import *
 from Servidor import *
 from tkinter import TclError, Tk
-#from Client import Client
+from Client import Client
 
 #12000 --> Servidor para obter ID etc
 #42000 --> Hellos
@@ -42,20 +42,26 @@ def main():
         info, address = s.recvfrom(1024)
 
         info = json.loads(info)
+        
+        print(info)
+
+        #for ip in info[2]:
+            #s.sendto(f"0 {info[0]}".encode('utf-8'), (ip, 36001))
+
 
         
-        #s.sendto("")
-        """
+        #message = s.recv(256)
+
         root = Tk()
         try:
             # Create a new client
-            app = Client(root, ip, rtpPort, fileName, serverAddr, serverPort, portas)
+            app = Client(root, info)
             app.master.title("RTPClient")	
             root.mainloop()
             root.update()
         except TclError:
             os._exit(0)
-        """
+
     else:
         print("Número de argumentos inválido.")
 
