@@ -5,29 +5,27 @@ from socket import *
 import threading
 import time
 from datetime import datetime
-from Caminhos import *
-from Node_info import *
+from Caminhos import Caminhos
+from Node_info import Node_Info
 import re
 
 
 class Nodo:
-    vizinhos: dict
+    
     beacon_port: int
     server_port: int
     server_ip: str
-    lock : threading.Lock
     caminhos : Caminhos
     id : str
     identifiers : dict
     streams : list
 
     def __init__(self) -> None:
-        self.vizinhos = dict()
+        
         self.beacon_port = 42000
         self.join_port = 42001
         self.server_ip = '10.0.3.10'
         self.server_port = 12000
-        self.lock = threading.Lock()
         self.caminhos = Caminhos()
         self.streams = []
 
@@ -77,7 +75,7 @@ class Nodo:
 
            
     def stream_server(self, porta:int):
-        streaming = Node_Info(porta, self.identifiers)
+        streaming = Node_Info(porta, self.identifiers, self.caminhos, self.id)
         self.streams.append(streaming)
         streaming.init()
 
@@ -101,10 +99,10 @@ class Nodo:
     
     def adiciona_vizinho(self, message, address):
         print("Adicionando")
-        self.lock.acquire()
-        self.vizinhos[message] = [address[0], datetime.now()]
-        print(self.vizinhos)
-        self.lock.release()
+        self.caminhos.lock.acquire()
+        self.caminhos.vizinhos[message] = [address[0], datetime.now()]
+        print(self.caminhos.vizinhos)
+        self.caminhos.lock.release()
 
     def join_server(self):
         s = socket(AF_INET, SOCK_DGRAM)
@@ -131,17 +129,17 @@ class Nodo:
 
                 if indice_atual == -1:
                     print("Era o primeiro!")
-                    self.lock.acquire()
+                    self.caminhos.lock.acquire()
                     self.caminhos.current_indices[indice] = indice_novo
-                    self.lock.release()               
+                    self.caminhos.lock.release()               
                     print(f"Indice atual: {indice_atual}\nIndice novo:{indice_novo}\nnodo: {nodo}")
                     break
                 elif indice_novo < indice_atual:
                     print("O nodo era melhor!")
-                    self.lock.acquire()
-                    self.vizinhos.pop(caminho[indice_atual])
+                    self.caminhos.lock.acquire()
+                    self.caminhos.vizinhos.pop(caminho[indice_atual])
                     self.caminhos.current_indices[indice] = indice_novo
-                    self.lock.release()               
+                    self.caminhos.lock.release()               
                     print(f"Indice atual: {indice_atual}\nIndice novo:{indice_novo}\nnodo: {nodo}")
                     break
 
@@ -160,27 +158,27 @@ class Nodo:
             print(f"Recebi uma mensagem do {address}: {message}")
             message = message.decode()
 
-            self.lock.acquire()
-            if message in self.vizinhos:
-                self.vizinhos[message][1] = datetime.now()
+            self.caminhos.lock.acquire()
+            if message in self.caminhos.vizinhos:
+                self.caminhos.vizinhos[message][1] = datetime.now()
                 print("Já está!") 
-            self.lock.release()
+            self.caminhos.lock.release()
 
     def activity_server(self):
         while True:
-            self.lock.acquire()
+            self.caminhos.lock.acquire()
 
-            for vizinho, info in self.vizinhos.items():
+            for vizinho, info in self.caminhos.vizinhos.items():
                 diferenca = datetime.now() - info[1]
                 print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
-                    self.vizinhos.pop(vizinho)
+                    self.caminhos.vizinhos.pop(vizinho)
                     threading.Thread(target=self.procura_vizinho, args=(vizinho,)).start()
                     break
                 else:
                     print("passou!")
 
-            self.lock.release()
+            self.caminhos.lock.release()
             threading.Event().wait(0.2)
     
     def procura_vizinho(self, vizinho):
@@ -197,7 +195,7 @@ class Nodo:
         while True:
             s = socket(AF_INET, SOCK_DGRAM)
 
-            for vizinho in self.vizinhos.values():
+            for vizinho in self.caminhos.vizinhos.values():
                 s.sendto(self.id.encode('utf-8'), (vizinho[0], self.beacon_port))
                 
             threading.Event().wait(0.2)

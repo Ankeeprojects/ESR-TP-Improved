@@ -4,6 +4,7 @@ from VideoStream import *
 import threading
 import time
 from RtpPacket import *
+from Caminhos import Caminhos
 
 class Node_Info:
     streaming_nodes : dict
@@ -12,8 +13,9 @@ class Node_Info:
     broadcasting : bool
     lock : threading.Lock
     identifiers : list
+    caminhos : Caminhos
 
-    def __init__(self, porta, identifiers) -> None:
+    def __init__(self, porta, identifiers, caminhos, id) -> None:
         self.streaming_nodes = dict()
         self.porta = porta
         self.lock = threading.Lock()
@@ -26,7 +28,11 @@ class Node_Info:
         self.stream_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.identifiers = identifiers
 
-        self.attempting = True
+        self.attempting = False
+
+        self.caminhos = caminhos
+
+        self.id = id
 
     def init(self):
         print(f"Streaming server a correr na porta {self.porta+1}")
@@ -42,14 +48,25 @@ class Node_Info:
             
             if message[0] == '0':
                 print("Este gajo quer stream")
-                #if not self.attempting:
-                self.streaming_nodes[message[1]] = self.identifiers[message[1]]
-                self.attempting = True
+                if not self.attempting:
+                    self.lock.acquire()
+                    self.streaming_nodes[message[1]] = self.identifiers[message[1]]
+                    self.lock.release()
+                    self.attempting = True
+                    
+                    self.caminhos.flood(self.id, self.porta, message[1], address)
+
+                
                 #self.s.sendto('1'.encode('utf-8'), address)
             elif message[0] == '2':
                 print(f"A fechar o stream para o {message[1]}")
-        
+
+                self.lock.acquire()
                 self.streaming_nodes.pop(message[1])
+
+                if not bool(self.streaming_nodes):
+                    self.broadcasting = False
+                self.lock.release()
                 #message, address = self.s.recvfrom(1024)
                 #else:
                 #    pass
@@ -74,7 +91,7 @@ class Node_Info:
             data = stream.nextFrame()
 
             frameNumber = stream.frameNbr()  
-            #self.lock.acquire()
+            self.lock.acquire()
             imprimir = frameNumber % 30 == 0   
             if imprimir:
                 print(f"Ficheiro: {self.ficheiro} Frame Number: {frameNumber} Porta: {self.porta}")
@@ -83,7 +100,7 @@ class Node_Info:
                 print(f"Estou a enviar para {nodo} {self.porta}")
                 self.stream_socket.sendto(self.make_RTP(data, frameNumber), (nodo, self.porta))
 
-            #self.lock.release()
+            self.lock.release()
 
     def make_RTP(self, payload, frameNbr):
         """RTP-packetize the video data."""

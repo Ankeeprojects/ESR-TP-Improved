@@ -69,8 +69,8 @@ class Client:
 			s.sendto(f"0 {self.id}".encode('utf-8'), (self.server_ip_pool[0], self.serverPort))
 			
 			try:
-				message = s.recv(256)
-				print("O GAJO RESPONDEU!")
+				message, address = s.recvfrom(256)
+				print(f"O GAJO RESPONDEU! {address}")
 				success = True
 			except socket.timeout:
 				print("Didn't work!")

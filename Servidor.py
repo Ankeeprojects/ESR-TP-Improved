@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta
 import time
 from Topologia import *
-from Caminhos import *
+from Caminhos import Caminhos
 from Stream_info import Stream_Info
 
 class Servidor:

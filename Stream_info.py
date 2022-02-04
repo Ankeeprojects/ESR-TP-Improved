@@ -44,13 +44,16 @@ class Stream_Info:
             if message[0] == '0':
                 print("Este gajo quer stream")
                 #if not self.attempting:
+                self.lock.acquire()
                 self.streaming_nodes[message[1]] = self.topologia.node_interfaces[message[1]][-1]
+                self.lock.release()
                 self.attempting = True
                 self.s.sendto('1'.encode('utf-8'), address)
             elif message[0] == '2':
                 print(f"A fechar o stream para o {message[1]}")
-        
+                self.lock.acquire()
                 self.streaming_nodes.pop(message[1])
+                self.lock.release()
                 #message, address = self.s.recvfrom(1024)
                 #else:
                 #    pass
@@ -75,16 +78,16 @@ class Stream_Info:
             data = stream.nextFrame()
 
             frameNumber = stream.frameNbr()  
-            #self.lock.acquire()
+            self.lock.acquire()
             imprimir = frameNumber % 30 == 0   
             if imprimir:
                 print(f"Ficheiro: {self.ficheiro} Frame Number: {frameNumber} Porta: {self.porta}")
             #print(self.streaming_nodes)
             for nodo in self.streaming_nodes.values():
-                print(f"Estou a enviar para {nodo} {self.porta}")
+                #print(f"Estou a enviar para {nodo} {self.porta}")
                 self.stream_socket.sendto(self.make_RTP(data, frameNumber), (nodo, self.porta))
 
-            #self.lock.release()
+            self.lock.release()
 
     def make_RTP(self, payload, frameNbr):
         """RTP-packetize the video data."""
