@@ -24,6 +24,6 @@ class VideoStream:
 		
 	def frameNbr(self):
 		"""Get frame number."""
-		return self.frameNum
+		return self.frameNum 
 	
 	
