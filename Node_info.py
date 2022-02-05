@@ -65,6 +65,7 @@ class Node_Info:
 
                 if not bool(self.streaming_nodes):
                     self.broadcasting = False
+                    self.attempting = False
                 self.lock.release()
                 #message, address = self.s.recvfrom(1024)
                 #else:

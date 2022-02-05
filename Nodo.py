@@ -70,7 +70,7 @@ class Nodo:
         self.caminhos.add_portas(portas)
 
         for indice, caminho in enumerate(self.caminhos.lista_caminhos):
-            threading.Thread(target=self.encontra_vizinho, args=(caminho, indice, [])).start()
+            threading.Thread(target=self.encontra_vizinho, args=(caminho, indice, [], 0)).start()
     
         for porta in portas:
             threading.Thread(target=self.stream_server, args=(porta,)).start()
@@ -82,7 +82,7 @@ class Nodo:
         streaming.init()
 
 
-    def encontra_vizinho(self, caminho : list, indice : int, busca_stream):
+    def encontra_vizinho(self, caminho : list, indice : int, busca_stream : list, offset : int):
         s = socket(AF_INET, SOCK_DGRAM)
         s.settimeout(0.2)
         print(f"Vou buscar substituto para {busca_stream}")
@@ -94,7 +94,9 @@ class Nodo:
                 message, address = s.recvfrom(1024)
                 message = message.decode()
 
-                self.caminhos.current_indices[indice] = curr
+                self.caminhos.current_indices[indice] = curr + offset
+
+                print(f"O indice deste gajo é o {self.caminhos.current_indices[indice]}")
                 self.adiciona_vizinho(message, address)
 
                 for porta in busca_stream:
@@ -136,6 +138,8 @@ class Nodo:
                 indice_novo = caminho.index(nodo)
                 indice_atual = self.caminhos.current_indices[indice]
 
+                print(f"cheguei aqui para ver quem é o melhor! .{indice_novo} vs {indice_atual}")
+
                 if indice_atual == -1:
                     print("Era o primeiro!")
                     self.caminhos.lock.acquire()
@@ -146,8 +150,15 @@ class Nodo:
                 elif indice_novo < indice_atual:
                     print("O nodo era melhor!")
                     self.caminhos.lock.acquire()
-                    self.caminhos.vizinhos.pop(caminho[indice_atual])
+                    
                     self.caminhos.current_indices[indice] = indice_novo
+                    
+                    for porta, id in self.caminhos.streamer.items():
+                        print(f"Estou a comparar o {id} com {caminho[indice_atual]}")   
+                        if id == caminho[indice_atual]:
+                            self.caminhos.streamer[porta] = nodo
+
+                    self.caminhos.vizinhos.pop(caminho[indice_atual])                    
                     self.caminhos.lock.release()               
                     print(f"Indice atual: {indice_atual}\nIndice novo:{indice_novo}\nnodo: {nodo}")
                     break
@@ -205,7 +216,7 @@ class Nodo:
         for ind_caminho, caminho in enumerate(self.caminhos.index_caminhos):
             try:
                 indice = caminho.index(vizinho) + 1
-                self.encontra_vizinho(self.caminhos.lista_caminhos[ind_caminho][indice:], ind_caminho, busca_stream)
+                self.encontra_vizinho(self.caminhos.lista_caminhos[ind_caminho][indice:], ind_caminho, busca_stream, indice)
                 
             except ValueError:
                 print("Não está!")
