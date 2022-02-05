@@ -91,6 +91,12 @@ class Node_Info:
             #ServerWorker(self.ligacoes, self.ficheiros, client_id, porta).run()
             #server.recvRtspRequest()
 
+    def retira_nodo(self, nodo):
+        self.lock.acquire()
+        self.streaming_nodes.pop(nodo)
+        self.lock.release()
+
+        
     def stream (self):
         while True:
             

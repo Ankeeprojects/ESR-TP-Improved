@@ -18,7 +18,7 @@ class Nodo:
     caminhos : Caminhos
     id : str
     identifiers : dict
-    streams : list
+    streams : dict
 
     def __init__(self) -> None:
         
@@ -27,7 +27,7 @@ class Nodo:
         self.server_ip = '10.0.3.10'
         self.server_port = 12000
         self.caminhos = Caminhos(True)
-        self.streams = []
+        self.streams = dict()
 
     def init(self):
         threading.Thread(target=self.beacon_server).start()
@@ -78,7 +78,7 @@ class Nodo:
            
     def stream_server(self, porta:int):
         streaming = Node_Info(porta, self.identifiers, self.caminhos, self.id)
-        self.streams.append(streaming)
+        self.streams[porta] = streaming
         streaming.init()
 
 
@@ -152,11 +152,14 @@ class Nodo:
                     self.caminhos.lock.acquire()
                     
                     self.caminhos.current_indices[indice] = indice_novo
-                    
+                    s = socket(AF_INET, SOCK_DGRAM)
                     for porta, id in self.caminhos.streamer.items():
                         print(f"Estou a comparar o {id} com {caminho[indice_atual]}")   
                         if id == caminho[indice_atual]:
                             self.caminhos.streamer[porta] = nodo
+                            s.sendto(f'3 {self.id}'.encode('utf-8'), (self.identifiers[nodo], porta+1))
+                            self.streamer[porta].retira_nodo(nodo)
+                            self.streaming_nodes[message[1]]
 
                     self.caminhos.vizinhos.pop(caminho[indice_atual])                    
                     self.caminhos.lock.release()               
