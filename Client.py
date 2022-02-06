@@ -235,7 +235,7 @@ class Client:
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-		s.sendto('2 23'.encode('utf-8'), (self.server_ip_pool[0], self.serverPort))
+		s.sendto(f'2 {self.id}'.encode('utf-8'), (self.server_ip_pool[0], self.serverPort))
 		self.master.destroy() # Close the gui window
 		try:
 			os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT) # Delete the cache image from video

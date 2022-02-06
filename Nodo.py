@@ -19,6 +19,7 @@ class Nodo:
     id : str
     identifiers : dict
     streams : dict
+    procurando : bool
 
     def __init__(self) -> None:
         
@@ -28,6 +29,7 @@ class Nodo:
         self.server_port = 12000
         self.caminhos = Caminhos(True)
         self.streams = dict()
+        self.procurando = False
 
     def init(self):
         threading.Thread(target=self.beacon_server).start()
@@ -140,8 +142,9 @@ class Nodo:
 
                 print(f"cheguei aqui para ver quem é o melhor! .{indice_novo} vs {indice_atual}")
 
-                if indice_atual == -1:
+                if indice_atual == -1 or self.procurando:
                     print("Era o primeiro!")
+                    self.procurando = False
                     self.caminhos.lock.acquire()
                     self.caminhos.current_indices[indice] = indice_novo
                     self.caminhos.lock.release()               
@@ -159,7 +162,7 @@ class Nodo:
                             self.caminhos.streamer[porta] = nodo
                             s.sendto(f'3 {self.id}'.encode('utf-8'), (self.identifiers[nodo], porta+1))
                             self.streamer[porta].retira_nodo(nodo)
-                            self.streaming_nodes[message[1]]
+                            #self.streaming_nodes[message[1]]
 
                     self.caminhos.vizinhos.pop(caminho[indice_atual])                    
                     self.caminhos.lock.release()               
@@ -195,9 +198,10 @@ class Nodo:
                 diferenca = datetime.now() - info[1]
                 #print(diferenca.total_seconds())
                 if diferenca.total_seconds() > 0.25:
-
+                    self.procurando = True
                     self.caminhos.vizinhos.pop(vizinho)
 
+                    print("O GAJO MORREU E ESTOU À PROCURA DE OUTRO!!!")
                     print(self.caminhos.streamer)
                     print(self.caminhos.streamer.values())
                     busca_stream = []
@@ -207,6 +211,14 @@ class Nodo:
                             self.caminhos.streamer[key] = None
                             print("O Gajo que me estava a dar stream morreu!!")
 
+                    for porta, streamer in self.streams.items():
+                        print(f"Estou a tirar o {vizinho}")
+                        try:
+                            streamer.retira_nodo(vizinho)
+                        except KeyError:
+                            pass
+
+                        
                     threading.Thread(target=self.procura_vizinho, args=(vizinho,busca_stream)).start()
                     break
                 #else:

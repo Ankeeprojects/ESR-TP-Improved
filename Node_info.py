@@ -66,6 +66,8 @@ class Node_Info:
                 if not bool(self.streaming_nodes):
                     self.broadcasting = False
                     self.attempting = False
+                    self.s.sendto(f'2 {self.id}'.encode('utf-8'), (self.caminhos.vizinhos[self.caminhos.streamer[self.porta]][0], self.porta+1))
+
                 self.lock.release()
                 #message, address = self.s.recvfrom(1024)
                 #else:
